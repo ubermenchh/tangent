@@ -1,22 +1,50 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { XStack, Input, Button } from "tamagui";
 import { Send } from "@tamagui/lucide-icons";
 import { useChatStore } from "@/stores/chatStore";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { Agent } from "@/agent";
 
 export function ChatInput() {
     const [text, setText] = useState("");
-    const { addMessage, isLoading } = useChatStore();
+    const { messages, addMessage, setLoading, isLoading } = useChatStore();
+    const { geminiApiKey } = useSettingsStore();
 
-    const handleSend = () => {
+    const agentRef = useRef<Agent | null>(null);
+
+    const handleSend = async () => {
         const trimmed = text.trim();
         if (!trimmed || isLoading) return;
 
+        if (!geminiApiKey) {
+            addMessage("assistant", "Please set your Gemini API key in settings first.");
+            return;
+        }
+
+        if (!agentRef.current) {
+            agentRef.current = new Agent({ apiKey: geminiApiKey });
+        }
+
         addMessage("user", trimmed);
         setText("");
+        setLoading(true);
 
-        setTimeout(() => {
-            addMessage("assistant", `I received: "${trimmed}"\n\nAgent Core coming soon!`);
-        }, 500);
+        try {
+            const history = messages;
+            const response = await agentRef.current.processMessage(trimmed, history);
+
+            addMessage("assistant", response.content);
+
+            // TODO: Handle toolCalls display in the future
+        } catch (error) {
+            console.error("Agent error:", error);
+            addMessage(
+                "assistant",
+                `Error: ${error instanceof Error ? error.message : "Something went wrong"}`
+            );
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -32,7 +60,7 @@ export function ChatInput() {
                 flex={1}
                 value={text}
                 onChangeText={setText}
-                placeholder="Ask Tangent..."
+                placeholder={geminiApiKey ? "Ask Tangent..." : "Set API key in settings...."}
                 placeholderTextColor="$placeholderColor"
                 bg="$backgroundHover"
                 borderWidth={1}

@@ -4,6 +4,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { TamaguiProvider, Theme } from "tamagui";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 import config from "../tamagui.config";
 
@@ -17,14 +18,19 @@ export default function RootLayout() {
         InterSemiBold: require("@tamagui/font-inter/otf/Inter-SemiBold.otf"),
         InterBold: require("@tamagui/font-inter/otf/Inter-Bold.otf"),
     });
+    const { loadSettings, isLoaded: settingsLoaded } = useSettingsStore();
 
     useEffect(() => {
-        if (fontsLoaded) {
+        loadSettings();
+    }, [loadSettings]);
+
+    useEffect(() => {
+        if (fontsLoaded && settingsLoaded) {
             SplashScreen.hideAsync();
         }
-    }, [fontsLoaded]);
+    }, [fontsLoaded, settingsLoaded]);
 
-    if (!fontsLoaded) {
+    if (!fontsLoaded || !settingsLoaded) {
         return null;
     }
 

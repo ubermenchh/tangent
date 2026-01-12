@@ -42,3 +42,21 @@ yarn-error.*
 
 .cursor/
 DESIGN.md
+.env*
+
+# Bun
+bun.lockb
+
+# Tamagui
+.tamagui/
+
+# EAS
+.eas/
+
+# Testing
+coverage/
+
+# Editor
+*.swp
+*.swo
+*~
