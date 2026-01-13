@@ -32,7 +32,7 @@ export class GeminiClient implements LLMClient {
 
     constructor(config: LLMConfig) {
         this.client = new GoogleGenerativeAI(config.apiKey);
-        this.model = config.model ?? "gemini-3-flash-preview";
+        this.model = config.model ?? "gemini-2.0-flash";
         this.temperature = config.temperature ?? 0.7;
         this.maxTokens = config.maxTokens ?? 2048;
     }

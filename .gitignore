@@ -60,3 +60,6 @@ coverage/
 *.swp
 *.swo
 *~
+
+/android/
+/ios/

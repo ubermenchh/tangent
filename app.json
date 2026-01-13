@@ -22,7 +22,13 @@
         "backgroundColor": "#111113"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.SEND_SMS",
+        "android.permission.READ_CONTACTS",
+        "android.permission.WRITE_CONTACTS"
+      ],
+      "package": "com.ubermenchh.tangent"
     },
     "web": {
       "bundler": "metro",
@@ -31,7 +37,19 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-font"
-    ]
+      "expo-font",
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Allow Tangent to access your contacts."
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "42843de8-5c21-4b5a-bcf0-fa37fadabcc4"
+      }
+    }
   }
 }
