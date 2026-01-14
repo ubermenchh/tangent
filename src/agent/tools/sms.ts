@@ -8,15 +8,12 @@ async function requestSmsPermission(): Promise<boolean> {
     }
 
     try {
-        const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.SEND_SMS,
-            {
-                title: "SMS Permission",
-                message: "Tangent needs permission to send messages directly.",
-                buttonPositive: "Allow",
-                buttonNegative: "Deny",
-            }
-        )
+        const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.SEND_SMS, {
+            title: "SMS Permission",
+            message: "Tangent needs permission to send messages directly.",
+            buttonPositive: "Allow",
+            buttonNegative: "Deny",
+        });
         return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (error) {
         console.error("SMS permission error:", error);
@@ -27,7 +24,8 @@ async function requestSmsPermission(): Promise<boolean> {
 toolRegistry.register(
     {
         name: "send_sms",
-        description: "Send an SMS text message directly to a phone number without opening the SMS app.",
+        description:
+            "Send an SMS text message directly to a phone number without opening the SMS app.",
         parameters: {
             type: "object",
             properties: {
@@ -37,17 +35,17 @@ toolRegistry.register(
                 },
                 message: {
                     type: "string",
-                    description: "The text message content to send."
+                    description: "The text message content to send.",
                 },
             },
             required: ["phoneNumber", "message"],
         },
     },
-    async (args) => {
-        const { phoneNumber, message } = args as { phoneNumber: string; message: string; }
+    async args => {
+        const { phoneNumber, message } = args as { phoneNumber: string; message: string };
         const hasPermission = await requestSmsPermission();
         if (!hasPermission) {
-            return { success: false, error: "SMS permission not granted" }
+            return { success: false, error: "SMS permission not granted" };
         }
 
         try {
@@ -58,12 +56,12 @@ toolRegistry.register(
                 phoneNumber,
                 messageSent: message,
                 response,
-            }
+            };
         } catch (error) {
             return {
                 success: false,
                 error: `Failed to send SMS ${error}`,
-            }
+            };
         }
     }
-)
+);

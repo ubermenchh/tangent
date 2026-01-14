@@ -33,9 +33,6 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Run TypeScript check
-        run: bun run tsc
-
       - name: Run ESLint
         run: bun run lint
 

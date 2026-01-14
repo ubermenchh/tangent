@@ -21,36 +21,33 @@ export default function SettingsScreen() {
     const [smsPermission, setSmsPermission] = useState<PermissionStatus>("undetermined");
     const [contactsPermission, setContactsPermission] = useState<PermissionStatus>("undetermined");
 
-    const checkPermissions = async () => {
-        if (Platform.OS !== "android") return;
-
-        // Check SMS
-        const smsStatus = await PermissionsAndroid.check(
-            PermissionsAndroid.PERMISSIONS.SEND_SMS
-        );
-        setSmsPermission(smsStatus ? "granted" : "denied");
-
-        // Check Contacts
-        const contactsStatus = await Contacts.getPermissionsAsync();
-        setContactsPermission(contactsStatus.granted ? "granted" : "denied");
-    };
-
     useEffect(() => {
+        const checkPermissions = async () => {
+            if (Platform.OS !== "android") return;
+
+            // Check SMS
+            const smsStatus = await PermissionsAndroid.check(
+                PermissionsAndroid.PERMISSIONS.SEND_SMS
+            );
+            setSmsPermission(smsStatus ? "granted" : "denied");
+
+            // Check Contacts
+            const contactsStatus = await Contacts.getPermissionsAsync();
+            setContactsPermission(contactsStatus.granted ? "granted" : "denied");
+        };
+
         checkPermissions();
     }, []);
 
     const requestSmsPermission = async () => {
         if (Platform.OS !== "android") return;
 
-        const result = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.SEND_SMS,
-            {
-                title: "SMS Permission",
-                message: "Tangent needs permission to send SMS messages directly.",
-                buttonPositive: "Allow",
-                buttonNegative: "Deny",
-            }
-        );
+        const result = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.SEND_SMS, {
+            title: "SMS Permission",
+            message: "Tangent needs permission to send SMS messages directly.",
+            buttonPositive: "Allow",
+            buttonNegative: "Deny",
+        });
 
         if (result === PermissionsAndroid.RESULTS.GRANTED) {
             setSmsPermission("granted");
@@ -65,7 +62,7 @@ export default function SettingsScreen() {
     const requestContactsPermission = async () => {
         const result = await Contacts.requestPermissionsAsync();
         setContactsPermission(result.granted ? "granted" : "denied");
-        
+
         if (!result.granted && !result.canAskAgain) {
             // User selected "Never ask again", open settings
             Linking.openSettings();
@@ -82,17 +79,23 @@ export default function SettingsScreen() {
 
     const getStatusColor = (status: PermissionStatus) => {
         switch (status) {
-            case "granted": return "$success";
-            case "denied": return "$error";
-            default: return "$placeholderColor";
+            case "granted":
+                return "$success";
+            case "denied":
+                return "$error";
+            default:
+                return "$placeholderColor";
         }
     };
 
     const getStatusText = (status: PermissionStatus) => {
         switch (status) {
-            case "granted": return "Granted";
-            case "denied": return "Denied";
-            default: return "Not requested";
+            case "granted":
+                return "Granted";
+            case "denied":
+                return "Denied";
+            default:
+                return "Not requested";
         }
     };
 
@@ -200,12 +203,24 @@ export default function SettingsScreen() {
                         </XStack>
                         <Button
                             size="$3"
-                            bg={smsPermission === "granted" ? "$backgroundHover" : "$accentBackground"}
-                            onPress={smsPermission === "granted" ? () => Linking.openSettings() : requestSmsPermission}
+                            bg={
+                                smsPermission === "granted"
+                                    ? "$backgroundHover"
+                                    : "$accentBackground"
+                            }
+                            onPress={
+                                smsPermission === "granted"
+                                    ? () => Linking.openSettings()
+                                    : requestSmsPermission
+                            }
                             br="$3"
                         >
                             <Text
-                                color={smsPermission === "granted" ? "$placeholderColor" : "$accentColor"}
+                                color={
+                                    smsPermission === "granted"
+                                        ? "$placeholderColor"
+                                        : "$accentColor"
+                                }
                                 fontSize="$3"
                                 fontWeight="600"
                             >
@@ -235,12 +250,24 @@ export default function SettingsScreen() {
                         </XStack>
                         <Button
                             size="$3"
-                            bg={contactsPermission === "granted" ? "$backgroundHover" : "$accentBackground"}
-                            onPress={contactsPermission === "granted" ? () => Linking.openSettings() : requestContactsPermission}
+                            bg={
+                                contactsPermission === "granted"
+                                    ? "$backgroundHover"
+                                    : "$accentBackground"
+                            }
+                            onPress={
+                                contactsPermission === "granted"
+                                    ? () => Linking.openSettings()
+                                    : requestContactsPermission
+                            }
                             br="$3"
                         >
                             <Text
-                                color={contactsPermission === "granted" ? "$placeholderColor" : "$accentColor"}
+                                color={
+                                    contactsPermission === "granted"
+                                        ? "$placeholderColor"
+                                        : "$accentColor"
+                                }
                                 fontSize="$3"
                                 fontWeight="600"
                             >

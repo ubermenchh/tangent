@@ -17,7 +17,7 @@ For sending SMS:
 2. Then use send_sms with the phone number found
 3. The SMS app will open for user confirmation (they must tap send)
 
-Be concise and helpful. If a tool returns data, summarize it naturally for the user.`
+Be concise and helpful. If a tool returns data, summarize it naturally for the user.`;
 
 interface AgentConfig {
     apiKey: string;

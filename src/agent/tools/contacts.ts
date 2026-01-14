@@ -4,7 +4,8 @@ import { toolRegistry } from "./registry";
 toolRegistry.register(
     {
         name: "search_contacts",
-        description: "Search for contacts by name. Returns matching contacts with their phone numbers.",
+        description:
+            "Search for contacts by name. Returns matching contacts with their phone numbers.",
         parameters: {
             type: "object",
             properties: {
@@ -16,36 +17,37 @@ toolRegistry.register(
             required: ["query"],
         },
     },
-    async (args) => {
+    async args => {
         const { query } = args as { query: string };
 
         const { status } = await Contacts.requestPermissionsAsync();
         if (status != "granted") {
-            return {error: "Contacts permission not granted"}
+            return { error: "Contacts permission not granted" };
         }
 
         const { data } = await Contacts.getContactsAsync({
             fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name],
-            name: query
-        })
+            name: query,
+        });
 
         if (data.length === 0) {
-            return { found: 0, contacts: [], message: `No contacts found matching "${query}"` }
+            return { found: 0, contacts: [], message: `No contacts found matching "${query}"` };
         }
 
         const contacts = data.slice(0, 5).map(contact => ({
             id: contact.id,
             name: contact.name ?? "Unknown",
-            phoneNumbers: contact.phoneNumbers?.map(p => ({
-                number: p.number,
-                label: p.label ?? "mobile"
-            })) ?? [],
-        }))
+            phoneNumbers:
+                contact.phoneNumbers?.map(p => ({
+                    number: p.number,
+                    label: p.label ?? "mobile",
+                })) ?? [],
+        }));
 
         return {
             found: data.length,
             contacts,
-            messaage: `Found ${data.length} contact(s) matching "${query}"`
-        }
+            messaage: `Found ${data.length} contact(s) matching "${query}"`,
+        };
     }
-)
+);
