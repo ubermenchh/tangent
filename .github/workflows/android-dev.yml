@@ -3,26 +3,71 @@ name: Build Android Dev APK
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - "docs/**"
   workflow_dispatch:
+    inputs:
+      buildType:
+        description: "Build type"
+        required: false
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - preview
+          - all
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run TypeScript check
+        run: bun run tsc
+
+      - name: Run ESLint
+        run: bun run lint
+
+      - name: Run Prettier check
+        run: bun run format:check
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h
 
       - name: Setup Java 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "21"
 
-      - name: Setup Node 24
-        uses: actions/setup-node@v6
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: "20"
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -40,11 +85,19 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Build APK
-        run: eas build --platform android --profile development --local --output ./tangent-dev.apk
+      - name: Setup EAS build cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.eas-build-local
+          key: ${{ runner.os }}-eas-${{ hashFiles('**/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-eas-
+
+      - name: Build Development APK
+        run: eas build --platform android --profile development --local --non-interactive --output=./tangent-dev.apk
 
       - name: Upload APK
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: tangent-dev
           path: ./tangent-dev.apk
