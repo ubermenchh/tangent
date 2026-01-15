@@ -1,32 +1,33 @@
-import { ToolDefinition } from "@/lib/llm/types";
+import { tool, Tool } from "ai";
+import { z, ZodObject, ZodRawShape } from "zod";
 
-export type ToolExecutor = (args: Record<string, unknown>) => Promise<unknown>;
+type ToolExecutor<T extends ZodRawShape> = (args: z.infer<ZodObject<T>>) => Promise<unknown>;
 
-interface RegisteredTool {
-    definition: ToolDefinition;
-    execute: ToolExecutor;
+interface ToolConfig<T extends ZodRawShape> {
+    description: string;
+    parameters: ZodObject<T>;
+    execute: ToolExecutor<T>;
 }
 
 class ToolRegistry {
-    private tools: Map<string, RegisteredTool> = new Map();
+    private tools: Map<string, Tool> = new Map();
 
-    register(definition: ToolDefinition, execute: ToolExecutor): void {
-        if (this.tools.has(definition.name)) {
-            console.warn(`Tool "${definition.name}" is already registered, overwriting.`);
+    register<T extends ZodRawShape>(name: string, config: ToolConfig<T>): void {
+        if (this.tools.has(name)) {
+            console.warn(`Tool "${name}" is already registered, overwriting.`);
         }
-        this.tools.set(definition.name, { definition, execute });
+
+        const aiTool = tool({
+            description: config.description,
+            inputSchema: config.parameters,
+            execute: config.execute,
+        });
+
+        this.tools.set(name, aiTool);
     }
 
-    getDefinitions(): ToolDefinition[] {
-        return Array.from(this.tools.values()).map(t => t.definition);
-    }
-
-    async execute(name: string, args: Record<string, unknown>): Promise<unknown> {
-        const tool = this.tools.get(name);
-        if (!tool) {
-            throw new Error(`Unknown tool: ${name}`);
-        }
-        return tool.execute(args);
+    getTools(): Record<string, Tool> {
+        return Object.fromEntries(this.tools);
     }
 
     has(name: string): boolean {
@@ -39,3 +40,4 @@ class ToolRegistry {
 }
 
 export const toolRegistry = new ToolRegistry();
+export { z } from "zod";

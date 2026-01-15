@@ -1,25 +1,13 @@
 import * as Contacts from "expo-contacts";
+import { z } from "zod";
 import { toolRegistry } from "./registry";
 
-toolRegistry.register(
-    {
-        name: "search_contacts",
-        description:
-            "Search for contacts by name. Returns matching contacts with their phone numbers.",
-        parameters: {
-            type: "object",
-            properties: {
-                query: {
-                    type: "string",
-                    description: "The name to search (e.g., 'Mom')",
-                },
-            },
-            required: ["query"],
-        },
-    },
-    async args => {
-        const { query } = args as { query: string };
-
+toolRegistry.register("search_contacts", {
+    description: "Search for contacts by name. Returns matching contacts with their phone numbers.",
+    parameters: z.object({
+        query: z.string().describe("The name to search (e.g., 'Mom')"),
+    }),
+    execute: async ({ query }) => {
         const { status } = await Contacts.requestPermissionsAsync();
         if (status != "granted") {
             return { error: "Contacts permission not granted" };
@@ -47,7 +35,7 @@ toolRegistry.register(
         return {
             found: data.length,
             contacts,
-            messaage: `Found ${data.length} contact(s) matching "${query}"`,
+            message: `Found ${data.length} contact(s) matching "${query}"`,
         };
-    }
-);
+    },
+});

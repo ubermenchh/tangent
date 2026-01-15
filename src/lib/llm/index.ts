@@ -1,18 +1,24 @@
-import { LLMClient, LLMConfig } from "./types";
-import { GeminiClient } from "./gemini";
+import { google } from "@ai-sdk/google";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
-export type Provider = "gemini" | "groq";
+export const gemini = google("gemini-3-flash-preview");
 
-export function createLLMClient(provider: Provider, config: LLMConfig): LLMClient {
-    switch (provider) {
-        case "gemini":
-            return new GeminiClient(config);
-        case "groq":
-            throw new Error("Groq client not implemented yet");
-        default:
-            throw new Error(`Unknown provider: ${provider}`);
-    }
+export function createModel(apiKey: string, modelId: string = "gemini-3-flash-preview") {
+    const provider = createGoogleGenerativeAI({ apiKey });
+    return provider(modelId);
 }
 
-export * from "./types";
-export { GeminiClient } from "./gemini";
+export function createEmbeddingModel(apiKey: string) {
+    const provider = createGoogleGenerativeAI({ apiKey });
+    return provider.embeddingModel("gemini-embedding-001");
+}
+
+export const AVAILABLE_MODELS = [
+    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", provider: "google" },
+    { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", provider: "google" },
+    { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", provider: "google" },
+    { id: "gemini-3-flash-preview", name: "Gemini 3 Flash", provider: "google" },
+    { id: "gemini-3-pro-preview", name: "Gemini 3 Pro", provider: "google" },
+] as const;
+
+export type ModelId = (typeof AVAILABLE_MODELS)[number]["id"];
