@@ -1,5 +1,7 @@
-import { YStack, Text, XStack } from "tamagui";
+import { View } from "react-native";
+import { Text } from "@/components/ui/text";
 import { Message } from "@/types/message";
+import { cn } from "@/lib/utils";
 
 interface MessageBubbleProps {
     message: Message;
@@ -9,33 +11,29 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     const isUser = message.role === "user";
 
     return (
-        <XStack w="100%" justifyContent={isUser ? "flex-end" : "flex-start"} mb="$3">
-            <YStack
-                maxWidth="85%"
-                bg={isUser ? "$accentBackground" : "$backgroundHover"}
-                px="$4"
-                py="$3"
-                br="$5"
-                borderBottomRightRadius={isUser ? "$2" : "$5"}
-                borderBottomLeftRadius={isUser ? "$5" : "$2"}
+        <View className={cn("w-full flex-row mb-3", isUser ? "justify-end" : "justify-start")}>
+            <View
+                className={cn(
+                    "max-w-[85%] px-4 py-3 rounded-2xl",
+                    isUser ? "bg-blue-600 rounded-br-md" : "bg-zinc-800 rounded-bl-md"
+                )}
             >
-                <Text color={isUser ? "$accentColor" : "$color"} fontSize="$4" lineHeight="$4">
+                <Text className={cn("text-base", isUser ? "text-white" : "text-white")}>
                     {message.content}
                 </Text>
 
                 <Text
-                    color={isUser ? "$accentColor" : "$placeholderColor"}
-                    fontSize="$1"
-                    opacity={0.7}
-                    mt="$1"
-                    textAlign={isUser ? "right" : "left"}
+                    className={cn(
+                        "text-xs mt-1 opacity-70",
+                        isUser ? "text-blue-100 text-right" : "text-zinc-400 text-left"
+                    )}
                 >
-                    {new Date(message.timestamp).toLocaleDateString([], {
+                    {new Date(message.timestamp).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                     })}
                 </Text>
-            </YStack>
-        </XStack>
+            </View>
+        </View>
     );
 }

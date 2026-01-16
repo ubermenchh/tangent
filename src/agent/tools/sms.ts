@@ -1,5 +1,5 @@
 import { PermissionsAndroid, Platform } from "react-native";
-import { MobileSms } from "react-native-mobile-sms";
+import mobileSms from "react-native-mobile-sms";
 import { z } from "zod";
 import { toolRegistry } from "./registry";
 
@@ -35,7 +35,7 @@ toolRegistry.register("send_sms", {
         }
 
         try {
-            MobileSms.sendSms(phoneNumber, message);
+            mobileSms.sendSms(phoneNumber, message);
 
             return {
                 success: true,

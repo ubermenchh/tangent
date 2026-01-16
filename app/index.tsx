@@ -1,7 +1,7 @@
-import { YStack, XStack, H1, Image, Button } from "tamagui";
+import { View, Text, Image, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Settings } from "@tamagui/lucide-icons";
+import { Settings } from "lucide-react-native";
 import { MessageList } from "@/components/chat/MessageList";
 import { ChatInput } from "@/components/chat/ChatInput";
 
@@ -10,35 +10,35 @@ export default function HomeScreen() {
     const router = useRouter();
 
     return (
-        <YStack flex={1} bg="$background" pt={insets.top} pb={insets.bottom}>
+        <View
+            className="flex-1 bg-zinc-950"
+            style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+        >
             {/* Header */}
-            <XStack
-                px="$4"
-                py="$3"
-                alignItems="center"
-                justifyContent="space-between"
-                borderBottomWidth={1}
-                borderColor="$borderColor"
-            >
-                <XStack alignItems="center" gap="$3">
-                    <Image source={require("../assets/tangent.png")} width={32} height={32} />
-                    <H1 color="$color" fontSize="$7" fontWeight="700">
-                        Tangent
-                    </H1>
-                </XStack>
+            <View className="flex-row px-4 py-3 items-center justify-between border-b border-zinc-800">
+                <View className="flex-row items-center gap-3">
+                    <Image
+                        source={require("../assets/tangent.png")}
+                        style={{ width: 32, height: 32 }}
+                    />
+                    <Text className="text-white text-xl font-bold">Tangent</Text>
+                </View>
 
-                <Button size="$3" circular chromeless onPress={() => router.push("/settings")}>
-                    <Settings size={24} color="$color" />
-                </Button>
-            </XStack>
+                <TouchableOpacity
+                    className="p-2 rounded-full"
+                    onPress={() => router.push("/settings")}
+                >
+                    <Settings size={24} color="white" />
+                </TouchableOpacity>
+            </View>
 
             {/* Messages */}
-            <YStack flex={1}>
+            <View className="flex-1">
                 <MessageList />
-            </YStack>
+            </View>
 
             {/* Input */}
             <ChatInput />
-        </YStack>
+        </View>
     );
 }

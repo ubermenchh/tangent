@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
-import { ScrollView } from "react-native";
-import { YStack, Text } from "tamagui";
+import { ScrollView, View } from "react-native";
+import { Text } from "@/components/ui/text";
 import { useChatStore } from "@/stores/chatStore";
 import { MessageBubble } from "./MessageBubble";
 
@@ -18,20 +18,14 @@ export function MessageList() {
 
     if (messages.length === 0) {
         return (
-            <YStack flex={1} justifyContent="center" alignItems="center" px="$4">
-                <Text color="$placeholderColor" fontSize="$5" textAlign="center">
+            <View className="flex-1 justify-center items-center px-4">
+                <Text className="text-zinc-500 text-lg text-center font-medium">
                     Start a conversation
                 </Text>
-                <Text
-                    color="$placeholderColor"
-                    fontSize="$3"
-                    mt="$2"
-                    textAlign="center"
-                    opacity={0.7}
-                >
+                <Text className="text-zinc-500 text-sm mt-2 text-center opacity-70">
                     Ask me to do something on your phone
                 </Text>
-            </YStack>
+            </View>
         );
     }
 
