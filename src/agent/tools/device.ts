@@ -5,11 +5,11 @@ import { toolRegistry } from "./registry";
 
 toolRegistry.register("get_device_info", {
     description:
-        "Get information about the device including branch, model, OS version, and device name.",
+        "Get information about the device including brand, model, OS version, and device name.",
     parameters: z.object({}),
     execute: async () => {
         return {
-            branch: Device.brand,
+            brand: Device.brand,
             modelName: Device.modelName,
             osName: Device.osName,
             osVersion: Device.osVersion,

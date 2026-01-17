@@ -18,13 +18,14 @@ export function findSimilar<T extends { embedding: number[] }>(
     queryEmbedding: number[],
     topK: number = 5
 ): Array<{ item: T; score: number }> {
+    const k = Math.max(0, topK);
     return items
         .map(item => ({
             item,
             score: cosineSimilarity(queryEmbedding, item.embedding),
         }))
         .sort((a, b) => b.score - a.score)
-        .slice(0, topK);
+        .slice(0, k);
 }
 
 export { cosineSimilarity };

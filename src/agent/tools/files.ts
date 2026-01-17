@@ -13,14 +13,19 @@ toolRegistry.register("search_files", {
     }),
     execute: async ({ query, limit = 5 }) => {
         const apiKey = useSettingsStore.getState().geminiApiKey;
-        if (!apiKey) return { error: "API key no configured" };
+        if (!apiKey) return { error: "API key not configured" };
 
         const stats = getIndexStats();
         if (stats.count === 0) {
             return { error: "No files indexed. Index files in Settings first." };
         }
 
-        const results = await searchFiles(apiKey, query, limit);
+        let results;
+        try {
+            results = await searchFiles(apiKey, query, limit);
+        } catch (err) {
+            return { error: `Search failed: ${err instanceof Error ? err.message : String(err)}` };
+        }
         if (results.length === 0) {
             return { found: 0, message: `No files matching "${query}"` };
         }

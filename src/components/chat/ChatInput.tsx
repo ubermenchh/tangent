@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 export function ChatInput() {
     const [text, setText] = useState("");
-    const { messages, addMessage, setLoading, isLoading } = useChatStore();
+    const { addMessage, setLoading, isLoading } = useChatStore();
     const { geminiApiKey } = useSettingsStore();
 
     const agentRef = useRef<Agent | null>(null);
@@ -31,7 +31,7 @@ export function ChatInput() {
         setLoading(true);
 
         try {
-            const history = messages;
+            const history = useChatStore.getState().messages;
             const response = await agentRef.current.processMessage(trimmed, history);
 
             addMessage("assistant", response.content);
@@ -54,7 +54,7 @@ export function ChatInput() {
                 className="flex-1 bg-zinc-800 text-white px-4 py-3 rounded-xl text-base border border-zinc-700 placeholder:text-zinc-500"
                 value={text}
                 onChangeText={setText}
-                placeholder={geminiApiKey ? "Ask Tangent..." : "Set API key in settings...."}
+                placeholder={geminiApiKey ? "Ask Tangent..." : "Set API key in settings..."}
                 placeholderTextColor="#71717a"
                 onSubmitEditing={handleSend}
                 returnKeyType="send"
