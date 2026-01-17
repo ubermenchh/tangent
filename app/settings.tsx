@@ -7,13 +7,26 @@ import {
     Linking,
     Platform,
     PermissionsAndroid,
+    ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter, useNavigation } from "expo-router";
-import { ArrowLeft, Check, Eye, EyeOff, MessageSquare, Users, Shield } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import {
+    ArrowLeft,
+    Check,
+    Eye,
+    EyeOff,
+    MessageSquare,
+    Users,
+    Shield,
+    FolderSearch,
+    RefreshCw,
+    Trash2,
+} from "lucide-react-native";
 import { useSettingsStore } from "@/stores/settingsStore";
 import * as Contacts from "expo-contacts";
 import { cn } from "@/lib/utils";
+import { buildIndex, getIndexStats, clearIndex, IndexProgress } from "@/index/manager";
 
 type PermissionStatus = "granted" | "denied" | "undetermined";
 
@@ -28,6 +41,10 @@ export default function SettingsScreen() {
 
     const [smsPermission, setSmsPermission] = useState<PermissionStatus>("undetermined");
     const [contactsPermission, setContactsPermission] = useState<PermissionStatus>("undetermined");
+
+    const [indexStats, setIndexStats] = useState({ count: 0, lastUpdated: null as number | null });
+    const [isIndexing, setIsIndexing] = useState(false);
+    const [indexProgress, setIndexProgress] = useState<IndexProgress | null>(null);
 
     useEffect(() => {
         const checkPermissions = async () => {
@@ -45,7 +62,13 @@ export default function SettingsScreen() {
         };
 
         checkPermissions();
+        refreshIndexStats();
     }, []);
+
+    const refreshIndexStats = () => {
+        const stats = getIndexStats();
+        setIndexStats(stats);
+    };
 
     const requestSmsPermission = async () => {
         if (Platform.OS !== "android") return;
@@ -89,6 +112,34 @@ export default function SettingsScreen() {
         }
     };
 
+    const handleStartIndexing = async () => {
+        if (!geminiApiKey) {
+            alert("Please set your Gemini API key first");
+            return;
+        }
+
+        setIsIndexing(true);
+        setIndexProgress(null);
+
+        try {
+            await buildIndex(geminiApiKey, undefined, progress => {
+                setIndexProgress(progress);
+            });
+            refreshIndexStats();
+        } catch (error) {
+            console.error("Indexing error:", error);
+            alert(`Indexing failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+        } finally {
+            setIsIndexing(false);
+            setIndexProgress(null);
+        }
+    };
+
+    const handleClearIndex = () => {
+        clearIndex();
+        refreshIndexStats();
+    };
+
     const hasChanges = apiKey.trim() !== (geminiApiKey ?? "");
 
     const getStatusColor = (status: PermissionStatus) => {
@@ -111,6 +162,16 @@ export default function SettingsScreen() {
             default:
                 return "Not requested";
         }
+    };
+
+    const formatLastUpdated = (timestamp: number | null) => {
+        if (!timestamp) return "Never";
+        return new Date(timestamp).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
     };
 
     return (
@@ -174,6 +235,101 @@ export default function SettingsScreen() {
                             {saved ? "Saved!" : "Save API Key"}
                         </Text>
                     </TouchableOpacity>
+                </View>
+
+                {/* File Indexing Section */}
+                <View className="gap-3">
+                    <View className="flex-row items-center gap-2">
+                        <FolderSearch size={20} color="white" />
+                        <Text className="text-white text-lg font-semibold">File Index</Text>
+                    </View>
+                    <Text className="text-zinc-400 text-sm">
+                        Index local files to enable natural language search
+                    </Text>
+
+                    {/* Index Stats */}
+                    <View className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+                        <View className="flex-row justify-between mb-3">
+                            <Text className="text-zinc-400 text-sm">Files indexed</Text>
+                            <Text className="text-white text-sm font-medium">
+                                {indexStats.count}
+                            </Text>
+                        </View>
+                        <View className="flex-row justify-between">
+                            <Text className="text-zinc-400 text-sm">Last updated</Text>
+                            <Text className="text-white text-sm font-medium">
+                                {formatLastUpdated(indexStats.lastUpdated)}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Progress indicator */}
+                    {isIndexing && indexProgress && (
+                        <View className="bg-zinc-900 p-4 rounded-xl border border-blue-600">
+                            <View className="flex-row items-center gap-3 mb-2">
+                                <ActivityIndicator size="small" color="#3b82f6" />
+                                <Text className="text-blue-400 text-sm font-medium capitalize">
+                                    {indexProgress.phase}...
+                                </Text>
+                            </View>
+                            {indexProgress.phase === "embedding" && (
+                                <>
+                                    <Text className="text-zinc-400 text-xs mb-1">
+                                        {indexProgress.current} / {indexProgress.total} files
+                                    </Text>
+                                    {indexProgress.file && (
+                                        <Text className="text-zinc-500 text-xs" numberOfLines={1}>
+                                            {indexProgress.file}
+                                        </Text>
+                                    )}
+                                </>
+                            )}
+                        </View>
+                    )}
+
+                    {/* Action buttons */}
+                    <View className="flex-row gap-3">
+                        <TouchableOpacity
+                            className={cn(
+                                "flex-1 py-3 rounded-xl items-center flex-row justify-center gap-2",
+                                isIndexing || !geminiApiKey ? "bg-zinc-800" : "bg-blue-600"
+                            )}
+                            onPress={handleStartIndexing}
+                            disabled={isIndexing || !geminiApiKey}
+                        >
+                            {isIndexing ? (
+                                <ActivityIndicator size="small" color="white" />
+                            ) : (
+                                <RefreshCw size={18} color={geminiApiKey ? "white" : "#71717a"} />
+                            )}
+                            <Text
+                                className={cn(
+                                    "font-semibold",
+                                    geminiApiKey ? "text-white" : "text-zinc-500"
+                                )}
+                            >
+                                {isIndexing ? "Indexing..." : "Start Indexing"}
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            className={cn(
+                                "px-4 py-3 rounded-xl items-center justify-center",
+                                indexStats.count > 0 ? "bg-red-600/20" : "bg-zinc-800"
+                            )}
+                            onPress={handleClearIndex}
+                            disabled={indexStats.count === 0 || isIndexing}
+                        >
+                            <Trash2
+                                size={18}
+                                color={indexStats.count > 0 ? "#ef4444" : "#71717a"}
+                            />
+                        </TouchableOpacity>
+                    </View>
+
+                    <Text className="text-zinc-500 text-xs">
+                        Scans Download, Documents, and DCIM folders for text files
+                    </Text>
                 </View>
 
                 {/* Permissions Section */}
