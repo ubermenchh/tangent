@@ -1,4 +1,5 @@
 export type MessageRole = "user" | "assistant";
+export type MessageStatus = "pending" | "streaming" | "complete" | "error";
 
 export interface ToolCall {
     id: string;
@@ -13,7 +14,9 @@ export interface Message {
     role: MessageRole;
     content: string;
     timestamp: number;
+    status?: MessageStatus;
     toolCalls?: ToolCall[];
+    reasoning?: string;
 }
 
 export const createMessageId = (): string => {

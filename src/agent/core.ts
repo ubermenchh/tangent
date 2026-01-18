@@ -1,4 +1,4 @@
-import { generateText, ModelMessage as AIMessage, stepCountIs } from "ai";
+import { streamText, generateText, ModelMessage as AIMessage, stepCountIs } from "ai";
 import { createModel } from "@/lib/llm";
 import { toolRegistry } from "./tools";
 import { Message, ToolCall } from "../types/message";
@@ -87,7 +87,10 @@ export class Agent {
             logger.debug("Agent", `Steps taken: ${steps?.length ?? 0}`);
 
             if (toolCalls.length > 0) {
-                logger.info("Agent", `Tool calls made: ${toolCalls.map(c => c.toolName).join(", ")}`);
+                logger.info(
+                    "Agent",
+                    `Tool calls made: ${toolCalls.map(c => c.toolName).join(", ")}`
+                );
                 toolCalls.forEach(call => {
                     logger.debug("Agent", `Tool: ${call.toolName}`, { args: call.input });
                 });
@@ -111,6 +114,63 @@ export class Agent {
             return {
                 content: "I encountered an error processing your request.",
                 toolCalls: [],
+            };
+        }
+    }
+
+    async *processMessageStream(
+        userMessage: string,
+        conversationHistory: Message[]
+    ): AsyncGenerator<{
+        type: "text" | "tool-call" | "tool-result" | "reasoning" | "done" | "error";
+        content?: string;
+        toolCall?: ToolCall;
+    }> {
+        const messages: AIMessage[] = conversationHistory.map(msg => ({
+            role: msg.role as "user" | "assistant",
+            content: msg.content,
+        }));
+        messages.push({ role: "user", content: userMessage });
+
+        const model = createModel(this.apiKey, this.modelId);
+        const tools = toolRegistry.getTools();
+
+        try {
+            const result = streamText({
+                model,
+                system: SYSTEM_PROMPT,
+                messages,
+                tools,
+                stopWhen: stepCountIs(5),
+            });
+
+            for await (const text of result.textStream) {
+                if (text) {
+                    yield { type: "text", content: text };
+                }
+            }
+
+            const toolCalls = await result.toolCalls;
+            if (toolCalls && toolCalls.length > 0) {
+                for (const tc of toolCalls) {
+                    yield {
+                        type: "tool-call",
+                        toolCall: {
+                            id: tc.toolCallId,
+                            name: tc.toolName,
+                            arguments: tc.input as Record<string, unknown>,
+                            status: "success",
+                        },
+                    };
+                }
+            }
+
+            yield { type: "done" };
+        } catch (error) {
+            logger.error("Agent", "Stream error", error);
+            yield {
+                type: "error",
+                content: error instanceof Error ? error.message : "Stream failed",
             };
         }
     }

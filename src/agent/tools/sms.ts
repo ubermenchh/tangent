@@ -52,7 +52,7 @@ toolRegistry.register("send_sms", {
                 success: true,
                 phoneNumber,
                 messageSent: message,
-                result
+                result,
             };
         } catch (error) {
             log.error(`Failed to send SMS to ${phoneNumber}`, error);

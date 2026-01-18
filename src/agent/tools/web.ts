@@ -47,7 +47,10 @@ toolRegistry.register("web_search", {
             });
 
             log.info(`Web search returned ${results.results.length} results`);
-            log.debug("Search results:", results.results.map(r => r.title));
+            log.debug(
+                "Search results:",
+                results.results.map(r => r.title)
+            );
 
             return {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any

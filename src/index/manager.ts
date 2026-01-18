@@ -63,7 +63,9 @@ export async function buildIndex(
         const batchNum = Math.floor(i / BATCH_SIZE) + 1;
         const batch = newFiles.slice(i, i + BATCH_SIZE);
 
-        log.debug(`Processing batch ${batchNum}/${totalBatches}: ${batch.map(f => f.name).join(", ")}`);
+        log.debug(
+            `Processing batch ${batchNum}/${totalBatches}: ${batch.map(f => f.name).join(", ")}`
+        );
 
         onProgress?.({
             phase: "embedding",
@@ -117,7 +119,9 @@ async function describeImage(apiKey: string, filePath: string, fileName: string)
             ],
         });
 
-        log.debug(`Image ${fileName} described in ${Date.now() - startTime}ms: "${text.slice(0, 80)}..."`);
+        log.debug(
+            `Image ${fileName} described in ${Date.now() - startTime}ms: "${text.slice(0, 80)}..."`
+        );
         return text;
     } catch (error) {
         log.warn(`Failed to analyze image ${fileName} after ${Date.now() - startTime}ms`, error);

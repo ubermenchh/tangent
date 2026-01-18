@@ -11,7 +11,7 @@ const log = logger.create("ChatInput");
 
 export function ChatInput() {
     const [text, setText] = useState("");
-    const { addMessage, setLoading, isLoading } = useChatStore();
+    const { addMessage, updateMessage, setLoading, isLoading } = useChatStore();
     const { geminiApiKey } = useSettingsStore();
 
     const agentRef = useRef<Agent | null>(null);
@@ -39,9 +39,11 @@ export function ChatInput() {
         setText("");
         setLoading(true);
 
+        const assistantMsgId = addMessage("assistant", "", { status: "streaming" });
+
         const startTime = Date.now();
         try {
-            const history = useChatStore.getState().messages;
+            const history = useChatStore.getState().messages.slice(0, -1);
             log.debug(`Processing with ${history.length} messages in history`);
 
             const response = await agentRef.current.processMessage(trimmed, history);
@@ -49,15 +51,17 @@ export function ChatInput() {
             log.info(`Response received in ${Date.now() - startTime}ms`);
             log.debug(`Tool calls: ${response.toolCalls.length}`);
 
-            addMessage("assistant", response.content);
-
-            // TODO: Handle toolCalls display in the future
+            updateMessage(assistantMsgId, {
+                content: response.content,
+                toolCalls: response.toolCalls,
+                status: "complete",
+            });
         } catch (error) {
             log.error(`Agent error after ${Date.now() - startTime}ms`, error);
-            addMessage(
-                "assistant",
-                `Error: ${error instanceof Error ? error.message : "Something went wrong"}`
-            );
+            updateMessage(assistantMsgId, {
+                content: `Error: ${error instanceof Error ? error.message : "Something went wrong"}`,
+                status: "error",
+            });
         } finally {
             setLoading(false);
         }

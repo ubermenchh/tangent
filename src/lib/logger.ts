@@ -11,8 +11,8 @@ const CURRENT_LEVEL: LogLevel = __DEV__ ? "DEBUG" : "WARN";
 
 const COLORS = {
     DEBUG: "\x1b[36m", // cyan
-    INFO: "\x1b[32m",  // green
-    WARN: "\x1b[33m",  // yellow
+    INFO: "\x1b[32m", // green
+    WARN: "\x1b[33m", // yellow
     ERROR: "\x1b[31m", // red
     RESET: "\x1b[0m",
 };
@@ -42,7 +42,7 @@ function log(level: LogLevel, tag: string, ...args: unknown[]) {
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
-        fractionalSecondDigits: 3
+        fractionalSecondDigits: 3,
     });
     const color = COLORS[level];
     const prefix = `${color}[${timestamp}] [${level}] [${tag}]${COLORS.RESET}`;

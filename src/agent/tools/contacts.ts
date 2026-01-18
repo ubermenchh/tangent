@@ -40,7 +40,10 @@ toolRegistry.register("search_contacts", {
                 })) ?? [],
         }));
 
-        log.debug("Returning contacts:", contacts.map(c => c.name));
+        log.debug(
+            "Returning contacts:",
+            contacts.map(c => c.name)
+        );
 
         return {
             found: data.length,
