@@ -121,18 +121,22 @@ export default function SettingsScreen() {
         setIsIndexing(true);
         setIndexProgress(null);
 
-        try {
-            await buildIndex(geminiApiKey, undefined, progress => {
-                setIndexProgress(progress);
-            });
-            refreshIndexStats();
-        } catch (error) {
-            console.error("Indexing error:", error);
-            alert(`Indexing failed: ${error instanceof Error ? error.message : "Unknown error"}`);
-        } finally {
-            setIsIndexing(false);
-            setIndexProgress(null);
-        }
+        requestAnimationFrame(async () => {
+            try {
+                await buildIndex(geminiApiKey, undefined, progress => {
+                    setIndexProgress(progress);
+                });
+                refreshIndexStats();
+            } catch (error) {
+                console.error("Indexing error:", error);
+                alert(
+                    `Indexing failed: ${error instanceof Error ? error.message : "Unknown error"}`
+                );
+            } finally {
+                setIsIndexing(false);
+                setIndexProgress(null);
+            }
+        });
     };
 
     const handleClearIndex = () => {

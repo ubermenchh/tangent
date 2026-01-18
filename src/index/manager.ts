@@ -5,6 +5,7 @@ import { IndexConfig, IndexedFile, DEFAULT_INDEX_CONFIG } from "./types";
 import { scanFolders, ScannedFile } from "./scanner";
 import { generateEmbedding, generateEmbeddings, findSimilar } from "./embeddings";
 import { indexStore } from "./store";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 
 const TEXT_EXTENSIONS = [
     "txt",
@@ -12,9 +13,6 @@ const TEXT_EXTENSIONS = [
     "json",
     "csv",
     // "pdf",
-    // "jpg",
-    // "jpeg",
-    // "png",
     // "xlsx",
     // "xls",
     // "doc",
@@ -22,6 +20,7 @@ const TEXT_EXTENSIONS = [
     // "ppt",
     // "pptx",
 ];
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "heic"];
 const BATCH_SIZE = 10;
 
 export interface IndexProgress {
@@ -38,6 +37,7 @@ export async function buildIndex(
 ): Promise<void> {
     onProgress?.({ phase: "scanning", current: 0, total: 0 });
     const scanned = await scanFolders(config);
+    console.log(`Scanned ${scanned.length} files from ${config.folders.join(", ")}`);
 
     const existing = new Set(indexStore.getAll().map(f => f.path));
     const newFiles = scanned.filter(f => !existing.has(f.path));
@@ -58,6 +58,44 @@ export async function buildIndex(
     onProgress?.({ phase: "complete", current: newFiles.length, total: newFiles.length });
 }
 
+async function describeImage(apiKey: string, filePath: string, fileName: string): Promise<string> {
+    try {
+        console.log(`Analyzing image: ${fileName}`);
+
+        const context = ImageManipulator.manipulate(filePath);
+        context.resize({ width: 800 });
+        const imageRef = await context.renderAsync();
+        const result = await imageRef.saveAsync({
+            format: SaveFormat.JPEG,
+            compress: 0.8,
+        });
+
+        const file = new File(result.uri);
+        const imageBytes = await file.bytes();
+
+        const model = createModel(apiKey);
+        const { text } = await generateText({
+            model,
+            messages: [
+                {
+                    role: "user",
+                    content: [
+                        { type: "image", image: imageBytes },
+                        {
+                            type: "text",
+                            text: "Descrive this image in 1-2 sentences for search indexing. Focus on: subjects, objects, scene, activities, colors, and any visible text.",
+                        },
+                    ],
+                },
+            ],
+        });
+        return text;
+    } catch (error) {
+        console.warn(`Failed to analyze image ${fileName}:`, error);
+        return `Image file: ${fileName}`;
+    }
+}
+
 async function indexBatch(apiKey: string, files: ScannedFile[]): Promise<IndexedFile[]> {
     const contents = await Promise.all(
         files.map(async f => {
@@ -72,15 +110,22 @@ async function indexBatch(apiKey: string, files: ScannedFile[]): Promise<Indexed
     );
 
     const model = createModel(apiKey);
-    const descriptions = await Promise.all(
-        files.map(async (f, i) => {
+    const descriptions: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+
+        if (IMAGE_EXTENSIONS.includes(f.extension)) {
+            descriptions.push(await describeImage(apiKey, f.path, f.name));
+        } else {
             const { text } = await generateText({
                 model,
                 prompt: `Describe this file in 1-2 sentences for search indexing.\nFilename: ${f.name}${contents[i] ? `\nContent: ${contents[i].slice(0, 1000)}` : ""}\nDescription:`,
             });
-            return text;
-        })
-    );
+            descriptions.push(text);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
 
     const textsToEmbed = files.map(
         (f, i) =>

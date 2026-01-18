@@ -36,9 +36,11 @@ async function scanDirectory(
     if (depth > 5 || files.length >= config.maxFiles) return;
 
     try {
-        const directory = new Directory(dirPath);
+        const uri = dirPath.startsWith("file://") ? dirPath : `file://${dirPath}`;
+        const directory = new Directory(uri);
         const items = await directory.list();
 
+        console.log(`Directory ${dirPath}: found ${items.length} items`);
         for (const item of items) {
             if (item instanceof File) {
                 const ext = item.name.split(".").pop()?.toLowerCase() || "";
@@ -58,7 +60,7 @@ async function scanDirectory(
                 await scanDirectory(item.uri, files, config, maxSize, depth + 1);
             }
         }
-    } catch {
-        // Skip dirs with no access
+    } catch (error) {
+        console.warn(`Cannot access directory: ${dirPath}`, error);
     }
 }
