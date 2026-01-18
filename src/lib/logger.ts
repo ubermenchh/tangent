@@ -38,7 +38,12 @@ function formatArgs(args: unknown[]): string {
 function log(level: LogLevel, tag: string, ...args: unknown[]) {
     if (LOG_LEVELS[level] < LOG_LEVELS[CURRENT_LEVEL]) return;
 
-    const timestamp = new Date().toISOString().slice(11, 23);
+    const timestamp = new Date().toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        fractionalSecondDigits: 3
+    });
     const color = COLORS[level];
     const prefix = `${color}[${timestamp}] [${level}] [${tag}]${COLORS.RESET}`;
 

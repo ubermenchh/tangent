@@ -1,5 +1,5 @@
 import { PermissionsAndroid, Platform } from "react-native";
-import mobileSms from "react-native-mobile-sms";
+import { SendDirectSms } from "react-native-send-direct-sms";
 import { z } from "zod";
 import { toolRegistry } from "./registry";
 import { logger } from "@/lib/logger";
@@ -45,14 +45,14 @@ toolRegistry.register("send_sms", {
         }
 
         try {
-            mobileSms.sendSms(phoneNumber, message);
-            log.info(`SMS sent successfully to ${phoneNumber}`);
+            const result = await SendDirectSms(phoneNumber, message);
+            log.info(`SMS sent successfully to ${phoneNumber}`, result);
 
             return {
                 success: true,
                 phoneNumber,
                 messageSent: message,
-                status: "sent (fire-and-forget)",
+                result
             };
         } catch (error) {
             log.error(`Failed to send SMS to ${phoneNumber}`, error);
