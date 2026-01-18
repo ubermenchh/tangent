@@ -1,5 +1,8 @@
 import { create } from "zustand";
 import * as SecureStore from "expo-secure-store";
+import { logger } from "@/lib/logger";
+
+const log = logger.create("SettingsStore");
 
 interface SettingsState {
     geminiApiKey: string | null;
@@ -16,12 +19,26 @@ export const useSettingsStore = create<SettingsState>(set => ({
     isLoaded: false,
 
     loadSettings: async () => {
-        const geminiApiKey = await SecureStore.getItemAsync(GEMINI_KEY);
-        set({ geminiApiKey, isLoaded: true });
+        log.debug("Loading settings from SecureStore");
+        try {
+            const geminiApiKey = await SecureStore.getItemAsync(GEMINI_KEY);
+            log.info(`Settings loaded, API key: ${geminiApiKey ? "present" : "not set"}`);
+            set({ geminiApiKey, isLoaded: true });
+        } catch (error) {
+            log.error("Failed to load settings", error);
+            set({ isLoaded: true });
+        }
     },
 
     setGeminiApiKey: async (key: string) => {
-        await SecureStore.setItemAsync(GEMINI_KEY, key);
-        set({ geminiApiKey: key });
+        log.debug("Saving Gemini API key");
+        try {
+            await SecureStore.setItemAsync(GEMINI_KEY, key);
+            log.info("Gemini API key saved successfully");
+            set({ geminiApiKey: key });
+        } catch (error) {
+            log.error("Failed to save Gemini API key", error);
+            throw error;
+        }
     },
 }));

@@ -2,22 +2,29 @@ import { PermissionsAndroid, Platform } from "react-native";
 import mobileSms from "react-native-mobile-sms";
 import { z } from "zod";
 import { toolRegistry } from "./registry";
+import { logger } from "@/lib/logger";
+
+const log = logger.create("SMSTools");
 
 async function requestSmsPermission(): Promise<boolean> {
     if (Platform.OS !== "android") {
+        log.warn("SMS not supported on this platform");
         return false;
     }
 
     try {
+        log.debug("Requesting SMS permission");
         const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.SEND_SMS, {
             title: "SMS Permission",
             message: "Tangent needs permission to send messages directly.",
             buttonPositive: "Allow",
             buttonNegative: "Deny",
         });
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
+        const hasPermission = granted === PermissionsAndroid.RESULTS.GRANTED;
+        log.info(`SMS permission: ${hasPermission ? "granted" : "denied"}`);
+        return hasPermission;
     } catch (error) {
-        console.error("SMS permission error:", error);
+        log.error("SMS permission error", error);
         return false;
     }
 }
@@ -29,13 +36,17 @@ toolRegistry.register("send_sms", {
         message: z.string().describe("The text message content to send."),
     }),
     execute: async ({ phoneNumber, message }) => {
+        log.info(`Sending SMS to ${phoneNumber}: "${message.slice(0, 30)}..."`);
+
         const hasPermission = await requestSmsPermission();
         if (!hasPermission) {
+            log.warn("SMS send blocked - no permission");
             return { success: false, error: "SMS permission not granted" };
         }
 
         try {
             mobileSms.sendSms(phoneNumber, message);
+            log.info(`SMS sent successfully to ${phoneNumber}`);
 
             return {
                 success: true,
@@ -44,6 +55,7 @@ toolRegistry.register("send_sms", {
                 status: "sent (fire-and-forget)",
             };
         } catch (error) {
+            log.error(`Failed to send SMS to ${phoneNumber}`, error);
             return {
                 success: false,
                 error: `Failed to send SMS ${error}`,

@@ -1,8 +1,15 @@
 import { z } from "zod";
 import { toolRegistry } from "./registry";
 import Exa from "exa-js";
+import { logger } from "@/lib/logger";
+
+const log = logger.create("WebTools");
 
 const EXA_API_KEY = process.env.EXPO_PUBLIC_EXA_API_KEY ?? "";
+
+if (!EXA_API_KEY) {
+    log.warn("EXA_API_KEY not configured - web search will be unavailable");
+}
 
 const exa = new Exa(EXA_API_KEY);
 
@@ -21,6 +28,13 @@ toolRegistry.register("web_search", {
             .optional(),
     }),
     execute: async ({ query, type = "auto", numResults = 5, category }) => {
+        log.info(`Web search: "${query}" (type=${type}, limit=${numResults})`);
+
+        if (!EXA_API_KEY) {
+            log.error("Web search attempted without API key");
+            return { error: "Exa API key not configured" };
+        }
+
         try {
             const results = await exa.search(query, {
                 type,
@@ -32,8 +46,12 @@ toolRegistry.register("web_search", {
                 },
             });
 
+            log.info(`Web search returned ${results.results.length} results`);
+            log.debug("Search results:", results.results.map(r => r.title));
+
             return {
-                results: results.results.map(r => ({
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                results: results.results.map((r: any) => ({
                     title: r.title,
                     url: r.url,
                     summary: r.summary,
@@ -42,6 +60,7 @@ toolRegistry.register("web_search", {
                 })),
             };
         } catch (error) {
+            log.error("Web search failed", error);
             return { error: `Search failed: ${error}` };
         }
     },
@@ -54,6 +73,13 @@ toolRegistry.register("find_similar", {
         numResults: z.number().optional(),
     }),
     execute: async ({ url, numResults = 5 }) => {
+        log.info(`Find similar: ${url} (limit=${numResults})`);
+
+        if (!EXA_API_KEY) {
+            log.error("Find similar attempted without API key");
+            return { error: "Exa API key not configured" };
+        }
+
         try {
             const results = await exa.findSimilar(url, {
                 numResults,
@@ -63,14 +89,18 @@ toolRegistry.register("find_similar", {
                 },
             });
 
+            log.info(`Find similar returned ${results.results.length} results`);
+
             return {
-                results: results.results.map(r => ({
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                results: results.results.map((r: any) => ({
                     title: r.title,
                     url: r.url,
                     summary: r.summary,
                 })),
             };
         } catch (error) {
+            log.error("Find similar failed", error);
             return { error: `Find similar failed: ${error}` };
         }
     },
@@ -82,13 +112,23 @@ toolRegistry.register("get_page_content", {
         url: z.string().describe("URL to get content from"),
     }),
     execute: async ({ url }) => {
+        log.info(`Get page content: ${url}`);
+
+        if (!EXA_API_KEY) {
+            log.error("Get page content attempted without API key");
+            return { error: "Exa API key not configured" };
+        }
+
         try {
             const results = await exa.getContents([url], {
                 text: { maxCharacters: 5000 },
                 summary: true,
             });
 
-            const page = results.results[0];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const page = results.results[0] as any;
+            log.info(`Got content for: ${page?.title ?? url} (${page?.text?.length ?? 0} chars)`);
+
             return {
                 title: page?.title,
                 url: page?.url,
@@ -96,6 +136,7 @@ toolRegistry.register("get_page_content", {
                 content: page?.text,
             };
         } catch (error) {
+            log.error("Get page content failed", error);
             return { error: `Failed to get content: ${error}` };
         }
     },

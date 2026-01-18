@@ -1,14 +1,19 @@
 import { google } from "@ai-sdk/google";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { logger } from "@/lib/logger";
+
+const log = logger.create("LLM");
 
 export const gemini = google("gemini-3-flash-preview");
 
 export function createModel(apiKey: string, modelId: string = "gemini-3-flash-preview") {
+    log.debug(`Creating model: ${modelId}`);
     const provider = createGoogleGenerativeAI({ apiKey });
     return provider(modelId);
 }
 
 export function createEmbeddingModel(apiKey: string) {
+    log.debug("Creating embedding model: gemini-embedding-001");
     const provider = createGoogleGenerativeAI({ apiKey });
     return provider.embeddingModel("gemini-embedding-001");
 }

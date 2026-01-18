@@ -2,6 +2,7 @@ import { generateText, ModelMessage as AIMessage, stepCountIs } from "ai";
 import { createModel } from "@/lib/llm";
 import { toolRegistry } from "./tools";
 import { Message, ToolCall } from "../types/message";
+import { logger } from "@/lib/logger";
 
 const SYSTEM_PROMPT = `You are Tangent, a helpful mobile assistant that can interact with the user's Android phone.
 
@@ -52,6 +53,9 @@ export class Agent {
         userMessage: string,
         conversationHistory: Message[]
     ): Promise<{ content: string; toolCalls: ToolCall[] }> {
+        logger.info("Agent", `Processing message: "${userMessage.slice(0, 100)}..."`);
+        logger.debug("Agent", `History length: ${conversationHistory.length}`);
+
         const messages: AIMessage[] = conversationHistory.map(m => ({
             role: m.role as "user" | "assistant",
             content: m.content,
@@ -65,14 +69,29 @@ export class Agent {
         const model = createModel(this.apiKey, this.modelId);
         const tools = toolRegistry.getTools();
 
+        logger.debug("Agent", `Available tools: ${Object.keys(tools).join(", ")}`);
+
         try {
-            const { text, toolCalls } = await generateText({
+            const startTime = Date.now();
+
+            const { text, toolCalls, steps } = await generateText({
                 model,
                 system: SYSTEM_PROMPT,
                 messages,
                 tools,
                 stopWhen: stepCountIs(5),
             });
+
+            const duration = Date.now() - startTime;
+            logger.info("Agent", `Response generated in ${duration}ms`);
+            logger.debug("Agent", `Steps taken: ${steps?.length ?? 0}`);
+
+            if (toolCalls.length > 0) {
+                logger.info("Agent", `Tool calls made: ${toolCalls.map(c => c.toolName).join(", ")}`);
+                toolCalls.forEach(call => {
+                    logger.debug("Agent", `Tool: ${call.toolName}`, { args: call.input });
+                });
+            }
 
             const executedToolCalls: ToolCall[] = toolCalls.map(call => ({
                 id: call.toolCallId,
@@ -81,12 +100,14 @@ export class Agent {
                 status: "success",
             }));
 
+            logger.debug("Agent", `Response preview: "${text.slice(0, 200)}..."`);
+
             return {
                 content: text,
                 toolCalls: executedToolCalls,
             };
         } catch (error) {
-            console.error("Agent execution error:", error);
+            logger.error("Agent", "Execution error", error);
             return {
                 content: "I encountered an error processing your request.",
                 toolCalls: [],

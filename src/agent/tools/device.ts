@@ -2,13 +2,17 @@ import * as Device from "expo-device";
 import * as Battery from "expo-battery";
 import { z } from "zod";
 import { toolRegistry } from "./registry";
+import { logger } from "@/lib/logger";
+
+const log = logger.create("DeviceTools");
 
 toolRegistry.register("get_device_info", {
     description:
         "Get information about the device including brand, model, OS version, and device name.",
     parameters: z.object({}),
     execute: async () => {
-        return {
+        log.debug("Getting device info");
+        const info = {
             brand: Device.brand,
             modelName: Device.modelName,
             osName: Device.osName,
@@ -17,13 +21,16 @@ toolRegistry.register("get_device_info", {
             isDevice: Device.isDevice,
             deviceType: Device.deviceType,
         };
+        log.info(`Device: ${info.brand} ${info.modelName} (${info.osName} ${info.osVersion})`);
+        return info;
     },
 });
 
 toolRegistry.register("get_battery_status", {
-    description: "Get teh current battery level and charging state of the device.",
+    description: "Get the current battery level and charging state of the device.",
     parameters: z.object({}),
     execute: async () => {
+        log.debug("Getting battery status");
         const level = await Battery.getBatteryLevelAsync();
         const state = await Battery.getBatteryStateAsync();
 
@@ -34,11 +41,13 @@ toolRegistry.register("get_battery_status", {
             [Battery.BatteryState.FULL]: "full",
         };
 
-        return {
+        const status = {
             level: Math.round(level * 100),
             state: stateMap[state] ?? "unknown",
             isCharging: state === Battery.BatteryState.CHARGING,
             isFull: state === Battery.BatteryState.FULL,
         };
+        log.info(`Battery: ${status.level}% (${status.state})`);
+        return status;
     },
 });

@@ -5,6 +5,9 @@ import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { Agent } from "@/agent";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
+
+const log = logger.create("ChatInput");
 
 export function ChatInput() {
     const [text, setText] = useState("");
@@ -15,30 +18,42 @@ export function ChatInput() {
 
     const handleSend = async () => {
         const trimmed = text.trim();
-        if (!trimmed || isLoading) return;
+        if (!trimmed || isLoading) {
+            log.debug("Send blocked: empty or loading");
+            return;
+        }
 
         if (!geminiApiKey) {
+            log.warn("Send attempted without API key");
             addMessage("assistant", "Please set your Gemini API key in settings first.");
             return;
         }
 
         if (!agentRef.current) {
+            log.info("Creating new Agent instance");
             agentRef.current = new Agent({ apiKey: geminiApiKey });
         }
 
+        log.info(`User message: "${trimmed.slice(0, 50)}..."`);
         addMessage("user", trimmed);
         setText("");
         setLoading(true);
 
+        const startTime = Date.now();
         try {
             const history = useChatStore.getState().messages;
+            log.debug(`Processing with ${history.length} messages in history`);
+
             const response = await agentRef.current.processMessage(trimmed, history);
+
+            log.info(`Response received in ${Date.now() - startTime}ms`);
+            log.debug(`Tool calls: ${response.toolCalls.length}`);
 
             addMessage("assistant", response.content);
 
             // TODO: Handle toolCalls display in the future
         } catch (error) {
-            console.error("Agent error:", error);
+            log.error(`Agent error after ${Date.now() - startTime}ms`, error);
             addMessage(
                 "assistant",
                 `Error: ${error instanceof Error ? error.message : "Something went wrong"}`

@@ -1,5 +1,8 @@
 import { tool, Tool } from "ai";
 import { z, ZodObject, ZodRawShape } from "zod";
+import { logger } from "@/lib/logger";
+
+const log = logger.create("ToolRegistry");
 
 type ToolExecutor<T extends ZodRawShape> = (args: z.infer<ZodObject<T>>) => Promise<unknown>;
 
@@ -14,16 +17,31 @@ class ToolRegistry {
 
     register<T extends ZodRawShape>(name: string, config: ToolConfig<T>): void {
         if (this.tools.has(name)) {
-            console.warn(`Tool "${name}" is already registered, overwriting.`);
+            log.warn(`Tool "${name}" already registered, overwriting`);
         }
+
+        const wrappedExecute: ToolExecutor<T> = async args => {
+            log.debug(`Executing tool: ${name}`, { args });
+            const start = Date.now();
+            try {
+                const result = await config.execute(args);
+                log.info(`Tool ${name} completed in ${Date.now() - start}ms`);
+                log.debug(`Tool ${name} result:`, result);
+                return result;
+            } catch (error) {
+                log.error(`Tool ${name} failed after ${Date.now() - start}ms`, error);
+                throw error;
+            }
+        };
 
         const aiTool = tool({
             description: config.description,
             inputSchema: config.parameters,
-            execute: config.execute,
+            execute: wrappedExecute,
         });
 
         this.tools.set(name, aiTool);
+        log.debug(`Registered tool: ${name}`);
     }
 
     getTools(): Record<string, Tool> {
