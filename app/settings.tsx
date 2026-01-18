@@ -8,6 +8,7 @@ import {
     Platform,
     PermissionsAndroid,
     ActivityIndicator,
+    ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -192,7 +193,7 @@ export default function SettingsScreen() {
             </View>
 
             {/* Content */}
-            <View className="flex-1 px-4 py-4 gap-6">
+            <ScrollView className="flex-1 px-4 py-4" contentContainerStyle={{ gap: 24 }}>
                 {/* Gemini API Key Section */}
                 <View className="gap-3">
                     <Text className="text-white text-lg font-semibold">Gemini API Key</Text>
@@ -423,7 +424,7 @@ export default function SettingsScreen() {
                         phone. Your API key is stored securely on your device.
                     </Text>
                 </View>
-            </View>
+            </ScrollView>
         </View>
     );
 }
