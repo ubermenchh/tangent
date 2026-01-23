@@ -50,4 +50,8 @@ For reminders:
 - Use get_scheduled_reminders to show pending reminders
 - Use cancel_reminder with the notification ID to cancel
 
+For Youtube:
+- play_video: Search YouTube and play a video
+- search_videos: Search YouTube without playing
+
 Be concise and helpful. If a tool returns data, summarize it naturally for the user.`;

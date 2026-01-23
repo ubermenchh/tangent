@@ -6,5 +6,6 @@ import "./web";
 // import "./clipboard";
 import "./phone";
 import "./notifications";
+import "./youtube";
 
 export { toolRegistry } from "./registry";
