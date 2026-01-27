@@ -1,22 +1,30 @@
-import * as Notifications from "expo-notifications";
 import { z } from "zod";
 import { toolRegistry } from "./registry";
 import { logger } from "@/lib/logger";
 
 const log = logger.create("NotificationTools");
 
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-        shouldShowList: true,
-    }),
-});
+let Notifications: typeof import("expo-notifications") | null = null;
+
+async function getNotifications() {
+    if (!Notifications) {
+        Notifications = await import("expo-notifications");
+        Notifications.setNotificationHandler({
+            handleNotification: async () => ({
+                shouldShowAlert: true,
+                shouldPlaySound: true,
+                shouldSetBadge: false,
+                shouldShowBanner: true,
+                shouldShowList: true,
+            }),
+        });
+    }
+    return Notifications;
+}
 
 async function requestPermissions(): Promise<boolean> {
-    const { status } = await Notifications.requestPermissionsAsync();
+    const Notif = await getNotifications();
+    const { status } = await Notif.requestPermissionsAsync();
     return status === "granted";
 }
 
@@ -28,6 +36,7 @@ toolRegistry.register("schedule_reminder", {
         delayMinutes: z.number().describe("Minutes from now to show the reminder"),
     }),
     execute: async ({ title, body, delayMinutes }) => {
+        const Notif = await getNotifications();
         log.info(`Scheduling reminder: "${title}" in ${delayMinutes} minutes`);
 
         const hasPermission = await requestPermissions();
@@ -36,14 +45,14 @@ toolRegistry.register("schedule_reminder", {
         }
 
         try {
-            const id = await Notifications.scheduleNotificationAsync({
+            const id = await Notif.scheduleNotificationAsync({
                 content: {
                     title,
                     body,
                     sound: true,
                 },
                 trigger: {
-                    type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+                    type: Notif.SchedulableTriggerInputTypes.TIME_INTERVAL,
                     seconds: delayMinutes * 60,
                 },
             });
@@ -67,9 +76,10 @@ toolRegistry.register("cancel_reminder", {
         notificationId: z.string().describe("The notification ID to cancel"),
     }),
     execute: async ({ notificationId }) => {
+        const Notif = await getNotifications(); 
         log.info(`Canceling reminder: ${notificationId}`);
         try {
-            await Notifications.cancelScheduledNotificationAsync(notificationId);
+            await Notif.cancelScheduledNotificationAsync(notificationId);
             return { success: true, message: "Reminder cancelled" };
         } catch (error) {
             log.error("Failed to cancel reminder", error);
@@ -82,9 +92,10 @@ toolRegistry.register("get_scheduled_reminders", {
     description: "Get all currently scheduled reminders",
     parameters: z.object({}),
     execute: async () => {
+        const Notif = await getNotifications();
         log.info("Getting scheduled reminders");
         try {
-            const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+            const scheduled = await Notif.getAllScheduledNotificationsAsync();
             return {
                 success: true,
                 count: scheduled.length,

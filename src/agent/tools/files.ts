@@ -1,10 +1,18 @@
 import { z } from "zod";
 import { toolRegistry } from "./registry";
-import { searchFiles, getIndexStats } from "@/index/manager";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { logger } from "@/lib/logger";
 
 const log = logger.create("FileTools");
+
+let indexManager: typeof import("@/index/manager") | null = null;
+
+async function getIndexManager() {
+    if (!indexManager) {
+        indexManager = await import("@/index/manager");
+    }
+    return indexManager;
+}
 
 toolRegistry.register("search_files", {
     description: "Search indexed local files and documents using natural language.",
@@ -23,7 +31,8 @@ toolRegistry.register("search_files", {
             return { error: "API key not configured" };
         }
 
-        const stats = getIndexStats();
+        const manager = await getIndexManager();
+        const stats = manager.getIndexStats();
         log.debug(`Index stats: ${stats.count} files indexed`);
 
         if (stats.count === 0) {
@@ -33,7 +42,7 @@ toolRegistry.register("search_files", {
 
         let results;
         try {
-            results = await searchFiles(apiKey, query, limit);
+            results = await manager.searchFiles(apiKey, query, limit);
             log.info(`File search returned ${results.length} results`);
             log.debug(
                 "Search results:",
@@ -65,7 +74,8 @@ toolRegistry.register("get_index_status", {
     description: "Check how many files are indexed for search.",
     parameters: z.object({}),
     execute: async () => {
-        const stats = getIndexStats();
+        const manager = await getIndexManager();
+        const stats = manager.getIndexStats();
         log.debug(`Index status requested: ${stats.count} files`);
         return {
             filesIndexed: stats.count,

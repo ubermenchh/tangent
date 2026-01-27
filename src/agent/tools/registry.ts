@@ -12,8 +12,12 @@ interface ToolConfig<T extends ZodRawShape> {
     execute: ToolExecutor<T>;
 }
 
+type LazyToolLoader = () => Promise<void>;
+
 class ToolRegistry {
     private tools: Map<string, Tool> = new Map();
+    private loaders: LazyToolLoader[] = [];
+    private initialized = false;
 
     register<T extends ZodRawShape>(name: string, config: ToolConfig<T>): void {
         if (this.tools.has(name)) {
@@ -43,8 +47,32 @@ class ToolRegistry {
         this.tools.set(name, aiTool);
         log.debug(`Registered tool: ${name}`);
     }
+    
+    registerLoader(loader: LazyToolLoader): void {
+        this.loaders.push(loader);
+    }
 
-    getTools(): Record<string, Tool> {
+    async initialize(): Promise<void> {
+        if (this.initialized) return;
+
+        log.info(`Initializing ${this.loaders.length} tool loaders`);
+
+        const results = await Promise.allSettled(
+            this.loaders.map(loader => loader())
+        );
+
+        results.forEach((result, i) => {
+            if (result.status === "rejected") {
+                log.warn(`Tool loader ${i} failed:`, result.reason);
+            }
+        });
+
+        this.initialized = true;
+        log.info(`Tool initialization complete. ${this.tools.size} tools available`);
+    }
+
+    async getTools(): Promise<Record<string, Tool>> {
+        await this.initialize();
         return Object.fromEntries(this.tools);
     }
 

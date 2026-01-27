@@ -1,10 +1,19 @@
 import { PermissionsAndroid, Platform } from "react-native";
-import { SendDirectSms } from "react-native-send-direct-sms";
 import { z } from "zod";
 import { toolRegistry } from "./registry";
 import { logger } from "@/lib/logger";
 
 const log = logger.create("SMSTools");
+
+let SendDirectSms: typeof import("react-native-send-direct-sms").SendDirectSms | null = null;
+
+async function getSendDirectSms() {
+    if (!SendDirectSms) {
+        const module = await import("react-native-send-direct-sms");
+        SendDirectSms = module.SendDirectSms;
+    }
+    return SendDirectSms;
+}
 
 async function requestSmsPermission(): Promise<boolean> {
     if (Platform.OS !== "android") {
@@ -45,7 +54,8 @@ toolRegistry.register("send_sms", {
         }
 
         try {
-            const result = await SendDirectSms(phoneNumber, message);
+            const sendSms = await getSendDirectSms();
+            const result = await sendSms(phoneNumber, message);
             log.info(`SMS sent successfully to ${phoneNumber}`, result);
 
             return {

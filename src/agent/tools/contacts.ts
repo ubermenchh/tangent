@@ -1,9 +1,17 @@
-import * as Contacts from "expo-contacts";
 import { z } from "zod";
 import { toolRegistry } from "./registry";
 import { logger } from "@/lib/logger";
 
 const log = logger.create("ContactsTools");
+
+let Contacts: typeof import("expo-contacts") | null = null;
+
+async function getContacts() {
+    if (!Contacts) {
+        Contacts = await import("expo-contacts");
+    }
+    return Contacts;
+}
 
 toolRegistry.register("search_contacts", {
     description: "Search for contacts by name. Returns matching contacts with their phone numbers.",
@@ -13,14 +21,16 @@ toolRegistry.register("search_contacts", {
     execute: async ({ query }) => {
         log.info(`Searching contacts: "${query}"`);
 
-        const { status } = await Contacts.requestPermissionsAsync();
+        const ContactsModule = await getContacts();
+
+        const { status } = await ContactsModule.requestPermissionsAsync();
         if (status != "granted") {
             log.warn("Contacts permission not granted");
             return { error: "Contacts permission not granted" };
         }
 
-        const { data } = await Contacts.getContactsAsync({
-            fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name],
+        const { data } = await ContactsModule.getContactsAsync({
+            fields: [ContactsModule.Fields.PhoneNumbers, ContactsModule.Fields.Name],
             name: query,
         });
 

@@ -37,7 +37,7 @@ export class Agent {
         });
 
         const model = createModel(this.apiKey, this.modelId);
-        const tools = toolRegistry.getTools();
+        const tools = await toolRegistry.getTools();
 
         logger.debug("Agent", `Available tools: ${Object.keys(tools).join(", ")}`);
 
@@ -103,7 +103,7 @@ export class Agent {
         messages.push({ role: "user", content: userMessage });
 
         const model = createModel(this.apiKey, this.modelId);
-        const tools = toolRegistry.getTools();
+        const tools = await toolRegistry.getTools();
 
         try {
             const result = streamText({

@@ -73,9 +73,9 @@ export async function authenticate(): Promise<string> {
 }
 
 export function logout(): void {
-  storage.delete("access_token");
-  storage.delete("refresh_token");
-  storage.delete("token_expiry");
+  storage.remove("access_token");
+  storage.remove("refresh_token");
+  storage.remove("token_expiry");
 }
 
 // Authenticated API call helper

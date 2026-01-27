@@ -21,9 +21,9 @@ export const useSettingsStore = create<SettingsState>(set => ({
     loadSettings: async () => {
         log.debug("Loading settings from SecureStore");
         try {
-            const geminiApiKey = await SecureStore.getItemAsync(GEMINI_KEY);
+        const geminiApiKey = await SecureStore.getItemAsync(GEMINI_KEY);
             log.info(`Settings loaded, API key: ${geminiApiKey ? "present" : "not set"}`);
-            set({ geminiApiKey, isLoaded: true });
+        set({ geminiApiKey, isLoaded: true });
         } catch (error) {
             log.error("Failed to load settings", error);
             set({ isLoaded: true });
@@ -33,9 +33,9 @@ export const useSettingsStore = create<SettingsState>(set => ({
     setGeminiApiKey: async (key: string) => {
         log.debug("Saving Gemini API key");
         try {
-            await SecureStore.setItemAsync(GEMINI_KEY, key);
+        await SecureStore.setItemAsync(GEMINI_KEY, key);
             log.info("Gemini API key saved successfully");
-            set({ geminiApiKey: key });
+        set({ geminiApiKey: key });
         } catch (error) {
             log.error("Failed to save Gemini API key", error);
             throw error;

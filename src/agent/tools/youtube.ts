@@ -1,11 +1,18 @@
 import { z } from "zod";
-import * as Linking from "expo-linking";
 import { toolRegistry } from "./registry";
 import { logger } from "@/lib/logger";
 import { searchYoutube, getYoutubeAppUrl, getYoutubeWatchUrl } from "@/integrations/youtube";
-import { authenticate, youtubeApiCall } from "@/integrations/youtubeAuth";
 
 const log = logger.create("YoutubeTools");
+
+let Linking: typeof import("expo-linking") | null = null;
+
+async function getLinking() {
+    if (!Linking) {
+        Linking = await import("expo-linking");
+    }
+    return Linking;
+}
 
 toolRegistry.register("play_video", {
     description:
@@ -28,16 +35,17 @@ toolRegistry.register("play_video", {
             }
 
             if (autoPlay) {
+                const LinkingModule = await getLinking();
                 const video = results[0];
                 const appUrl = getYoutubeAppUrl(video.videoId);
                 const webUrl = getYoutubeWatchUrl(video.videoId);
 
                 try {
-                    const canOpen = await Linking.canOpenURL(appUrl);
+                    const canOpen = await LinkingModule.canOpenURL(appUrl);
                     if (canOpen) {
-                        await Linking.openURL(appUrl);
+                        await LinkingModule.openURL(appUrl);
                     } else {
-                        await Linking.openURL(webUrl);
+                        await LinkingModule.openURL(webUrl);
                     }
 
                     log.info(`Playing: ${video.title}`);
@@ -48,7 +56,7 @@ toolRegistry.register("play_video", {
                     };
                 } catch {
                     // Fallback to web
-                    await Linking.openURL(webUrl);
+                    await LinkingModule.openURL(webUrl);
                     return {
                         success: true,
                         message: `Opening in browser: ${video.title}`,
@@ -88,46 +96,4 @@ toolRegistry.register("search_videos", {
             return { success: false, error: message };
         }
     },
-});
-
-toolRegistry.register("connect_youtube", {
-  description: "Connect user's YouTube account for personalized features",
-  parameters: z.object({}),
-  execute: async () => {
-    try {
-      await authenticate();
-      return { success: true, message: "YouTube account connected" };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : String(error);
-      return { success: false, error: msg };
-    }
-  },
-});
-
-toolRegistry.register("get_my_playlists", {
-  description: "Get user's YouTube playlists",
-  parameters: z.object({}),
-  execute: async () => {
-    try {
-      const data = await youtubeApiCall("/playlists?part=snippet&mine=true&maxResults=20");
-      return { success: true, playlists: (data as { items: unknown[] }).items };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : String(error);
-      return { success: false, error: msg };
-    }
-  },
-});
-
-toolRegistry.register("get_my_subscriptions", {
-  description: "Get user's YouTube subscriptions",
-  parameters: z.object({}),
-  execute: async () => {
-    try {
-      const data = await youtubeApiCall("/subscriptions?part=snippet&mine=true&maxResults=20");
-      return { success: true, subscriptions: (data as { items: unknown[] }).items };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : String(error);
-      return { success: false, error: msg };
-    }
-  },
 });

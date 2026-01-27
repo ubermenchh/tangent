@@ -1,10 +1,25 @@
-import * as Device from "expo-device";
-import * as Battery from "expo-battery";
 import { z } from "zod";
 import { toolRegistry } from "./registry";
 import { logger } from "@/lib/logger";
 
 const log = logger.create("DeviceTools");
+
+let Device: typeof import("expo-device") | null = null;
+let Battery: typeof import("expo-battery") | null = null;
+
+async function getDevice() {
+    if (!Device) {
+        Device = await import("expo-device");
+    }
+    return Device;
+}
+
+async function getBattery() {
+    if (!Battery) {
+        Battery = await import("expo-battery");
+    }
+    return Battery;
+}
 
 toolRegistry.register("get_device_info", {
     description:
@@ -12,14 +27,15 @@ toolRegistry.register("get_device_info", {
     parameters: z.object({}),
     execute: async () => {
         log.debug("Getting device info");
+        const DeviceModule = await getDevice();
         const info = {
-            brand: Device.brand,
-            modelName: Device.modelName,
-            osName: Device.osName,
-            osVersion: Device.osVersion,
-            deviceName: Device.deviceName,
-            isDevice: Device.isDevice,
-            deviceType: Device.deviceType,
+            brand: DeviceModule.brand,
+            modelName: DeviceModule.modelName,
+            osName: DeviceModule.osName,
+            osVersion: DeviceModule.osVersion,
+            deviceName: DeviceModule.deviceName,
+            isDevice: DeviceModule.isDevice,
+            deviceType: DeviceModule.deviceType,
         };
         log.info(`Device: ${info.brand} ${info.modelName} (${info.osName} ${info.osVersion})`);
         return info;
@@ -31,21 +47,22 @@ toolRegistry.register("get_battery_status", {
     parameters: z.object({}),
     execute: async () => {
         log.debug("Getting battery status");
-        const level = await Battery.getBatteryLevelAsync();
-        const state = await Battery.getBatteryStateAsync();
+        const BatteryModule = await getBattery();
+        const level = await BatteryModule.getBatteryLevelAsync();
+        const state = await BatteryModule.getBatteryStateAsync();
 
         const stateMap: Record<number, string> = {
-            [Battery.BatteryState.UNKNOWN]: "unknown",
-            [Battery.BatteryState.UNPLUGGED]: "unplugged",
-            [Battery.BatteryState.CHARGING]: "charging",
-            [Battery.BatteryState.FULL]: "full",
+            [BatteryModule.BatteryState.UNKNOWN]: "unknown",
+            [BatteryModule.BatteryState.UNPLUGGED]: "unplugged",
+            [BatteryModule.BatteryState.CHARGING]: "charging",
+            [BatteryModule.BatteryState.FULL]: "full",
         };
 
         const status = {
             level: Math.round(level * 100),
             state: stateMap[state] ?? "unknown",
-            isCharging: state === Battery.BatteryState.CHARGING,
-            isFull: state === Battery.BatteryState.FULL,
+            isCharging: state === BatteryModule.BatteryState.CHARGING,
+            isFull: state === BatteryModule.BatteryState.FULL,
         };
         log.info(`Battery: ${status.level}% (${status.state})`);
         return status;

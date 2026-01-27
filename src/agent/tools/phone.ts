@@ -1,9 +1,17 @@
-import * as Linking from "expo-linking";
 import { z } from "zod";
 import { toolRegistry } from "./registry";
 import { logger } from "@/lib/logger";
 
 const log = logger.create("PhoneTools");
+
+let Linking: typeof import("expo-linking") | null = null;
+
+async function getLinking() {
+    if (!Linking) {
+        Linking = await import("expo-linking");
+    }
+    return Linking;
+}
 
 toolRegistry.register("make_phone_call", {
     description: "Initiate a phone call to a number. Opens the phone dialer.",
@@ -13,12 +21,13 @@ toolRegistry.register("make_phone_call", {
     execute: async ({ phoneNumber }) => {
         log.info(`Initiating call to: ${phoneNumber}`);
         try {
+            const LinkingModule = await getLinking();
             const url = `tel:${phoneNumber.replace(/\s/g, "")}`;
-            const canOpen = await Linking.canOpenURL(url);
+            const canOpen = await LinkingModule.canOpenURL(url);
             if (!canOpen) {
                 return { success: false, error: "Cannot open phone dialer" };
             }
-            await Linking.openURL(url);
+            await LinkingModule.openURL(url);
             return { success: true, message: `Opening dialer for ${phoneNumber}` };
         } catch (error) {
             log.error("Failed to initiate call", error);
@@ -37,6 +46,8 @@ toolRegistry.register("open_app", {
     }),
     execute: async ({ app, query }) => {
         log.info(`Opening app: ${app}${query ? ` with query: ${query}` : ""}`);
+
+        const LinkingModule = await getLinking();
 
         const apps: Record<string, { scheme: string; package: string }> = {
             spotify: {
@@ -82,9 +93,9 @@ toolRegistry.register("open_app", {
 
         try {
             if (appConfig?.scheme) {
-                const canOpen = await Linking.canOpenURL(appConfig.scheme);
+                const canOpen = await LinkingModule.canOpenURL(appConfig.scheme);
                 if (canOpen) {
-                    await Linking.openURL(appConfig.scheme);
+                    await LinkingModule.openURL(appConfig.scheme);
                     log.info(`Opened ${app} via scheme`);
                     return { success: true, message: `Opened ${app}` };
                 }
@@ -95,13 +106,13 @@ toolRegistry.register("open_app", {
             const marketUrl = `market://launch?id=${packageName}`;
 
             try {
-                await Linking.openURL(marketUrl);
+                await LinkingModule.openURL(marketUrl);
                 log.info(`Opened ${app} via market launch`);
                 return { success: true, message: `Opened ${app}` };
             } catch {
                 // Last resort: open in Play Store
                 const playStoreUrl = `https://play.google.com/store/apps/details?id=${packageName}`;
-                await Linking.openURL(playStoreUrl);
+                await LinkingModule.openURL(playStoreUrl);
                 return { success: true, message: `Opening ${app} in Play Store` };
             }
         } catch (error) {
@@ -119,11 +130,12 @@ toolRegistry.register("open_url", {
     execute: async ({ url }) => {
         log.info(`Opening URL: ${url}`);
         try {
+            const LinkingModule = await getLinking();
             let fullUrl = url;
             if (!url.startsWith("http://") && !url.startsWith("https://")) {
                 fullUrl = `https://${url}`;
             }
-            await Linking.openURL(fullUrl);
+            await LinkingModule.openURL(fullUrl);
             return { success: true, message: `Opened ${fullUrl}` };
         } catch (error) {
             log.error("Failed to open URL", error);
