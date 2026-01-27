@@ -42,7 +42,8 @@
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.ACTIVITY_RECOGNITION",
         "android.permission.BODY_SENSORS",
-        "android.permission.VIBRATE"
+        "android.permission.VIBRATE",
+        "android.permission.QUERY_ALL_PACKAGES"
       ],
       "package": "com.ubermenchh.tangent"
     },

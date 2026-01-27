@@ -45,6 +45,7 @@
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
     "react-native-css-interop": "^0.2.1",
+    "react-native-launcher-kit": "^2.1.0",
     "react-native-markdown-display": "^7.0.2",
     "react-native-mmkv": "^4.1.1",
     "react-native-reanimated": "^4.2.1",
