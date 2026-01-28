@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/tangent.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/tangent.png",
       "resizeMode": "contain",
