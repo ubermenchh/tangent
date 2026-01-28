@@ -19,6 +19,6 @@ toolRegistry.registerLoader(() => safeLoad("clipboard", () => import("./clipboar
 toolRegistry.registerLoader(() => safeLoad("phone", () => import("./phone")));
 toolRegistry.registerLoader(() => safeLoad("notifications", () => import("./notifications")));
 toolRegistry.registerLoader(() => safeLoad("youtube", () => import("./youtube")));
-toolRegistry.registerLoader(() => safeLoad("apps", () => import("./apps")));
+toolRegistry.registerLoader(() => safeLoad("accessibility", () => import("./accessibility")));
 
 export { toolRegistry } from "./registry";
