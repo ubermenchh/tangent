@@ -31,13 +31,13 @@
         "expo-splash-screen": "^31.0.13",
         "expo-status-bar": "~3.0.9",
         "expo-web-browser": "^15.0.10",
+        "react-native-launcher-kit": "github:louaySleman/react-native-launcher-kit",
         "lucide-react-native": "^0.562.0",
         "nativewind": "^4.2.1",
         "react": "19.1.0",
         "react-dom": "19.1.0",
         "react-native": "0.81.5",
         "react-native-css-interop": "^0.2.1",
-        "react-native-launcher-kit": "2.0.0",
         "react-native-markdown-display": "^7.0.2",
         "react-native-mmkv": "^4.1.1",
         "react-native-reanimated": "^4.2.1",
@@ -1370,7 +1370,7 @@
 
     "react-native-is-edge-to-edge": ["react-native-is-edge-to-edge@1.2.1", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-FLbPWl/MyYQWz+KwqOZsSyj2JmLKglHatd3xLZWskXOpRaio4LfEDEz8E/A6uD8QoTHW6Aobw1jbEwK7KMgR7Q=="],
 
-    "react-native-launcher-kit": ["react-native-launcher-kit@2.0.0", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-A3vw8Fq6WhLqCI8TZ30XfECZ9AGAB7mBzyPo3KnQ9RmL9k76u46whJ7l2VTDRa8fLTFyIJLH3NFvstTJB1SZuw=="],
+    "react-native-launcher-kit": ["react-native-launcher-kit@github:louaySleman/react-native-launcher-kit#8083ed2", { "dependencies": { "react-native-launcher-kit": "^1.0.4" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "louaySleman-react-native-launcher-kit-8083ed2"],
 
     "react-native-markdown-display": ["react-native-markdown-display@7.0.2", "", { "dependencies": { "css-to-react-native": "^3.0.0", "markdown-it": "^10.0.0", "prop-types": "^15.7.2", "react-native-fit-image": "^1.5.5" }, "peerDependencies": { "react": ">=16.2.0", "react-native": ">=0.50.4" } }, "sha512-Mn4wotMvMfLAwbX/huMLt202W5DsdpMO/kblk+6eUs55S57VVNni1gzZCh5qpznYLjIQELNh50VIozEfY6fvaQ=="],
 
@@ -1837,6 +1837,8 @@
     "react-native/semver": ["semver@7.7.3", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q=="],
 
     "react-native-css-interop/semver": ["semver@7.7.3", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q=="],
+
+    "react-native-launcher-kit/react-native-launcher-kit": ["react-native-launcher-kit@1.0.4", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-Tt3wt8eHPQ/3dcGsBMB4dXfTiYdHkyvnwmS/guVh/UrIl1wlX+mZjfKSc87yj3ttUv6UQXjOuX9D2Lk5naqJIQ=="],
 
     "react-native-reanimated/semver": ["semver@7.7.3", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q=="],
 
