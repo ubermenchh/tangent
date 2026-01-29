@@ -143,3 +143,72 @@ toolRegistry.register("open_url", {
         }
     },
 });
+
+toolRegistry.register("navigate_to", {
+    description: "Open Google Maps with turn-by-turn navigation to a destination.",
+    parameters: z.object({
+        destination: z.string().describe("Address or place name"),
+        mode: z
+            .enum(["driving", "walking", "bicycling", "transit"])
+            .optional()
+            .describe("Navigation mode (default: driving)"),
+    }),
+    execute: async ({ destination, mode = "driving" }) => {
+        const LinkingModule = await getLinking();
+        const url = `google.navigation:q=${encodeURIComponent(destination)}&mode=${mode}`;
+
+        try {
+            await LinkingModule.openURL(url);
+            return { success: true, message: `Starting ${mode} navigation to ${destination}` };
+        } catch {
+            // Fallback to web
+            const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=${mode}`;
+            await LinkingModule.openURL(webUrl);
+            return { success: true, message: `Opening directions to ${destination}` };
+        }
+    },
+});
+
+toolRegistry.register("send_whatsapp", {
+    description: "Open WhatsApp with a pre-filled message to a phone number.",
+    parameters: z.object({
+        phoneNumber: z.string().describe("Phone number with country code (e.g., +1234567890)"),
+        message: z.string().optional().describe("Pre-filled message"),
+    }),
+    execute: async ({ phoneNumber, message }) => {
+        const LinkingModule = await getLinking();
+        const number = phoneNumber.replace(/[^0-9]/g, "");
+        let url = `whatsapp://send?phone=${number}`;
+        if (message) {
+            url += `&text=${encodeURIComponent(message)}`;
+        }
+
+        try {
+            await LinkingModule.openURL(url);
+            return { success: true, message: `Opened WhatsApp chat with ${phoneNumber}` };
+        } catch {
+            return { success: false, error: "WhatsApp not installed or couldn't open" };
+        }
+    },
+});
+
+toolRegistry.register("search_youtube", {
+    description: "Open YouTube app with a search query.",
+    parameters: z.object({
+        query: z.string().describe("Search query"),
+    }),
+    execute: async ({ query }) => {
+        const LinkingModule = await getLinking();
+        const url = `youtube://results?search_query=${encodeURIComponent(query)}`;
+
+        try {
+            await LinkingModule.openURL(url);
+            return { success: true, message: `Searching YouTube for "${query}"` };
+        } catch {
+            await LinkingModule.openURL(
+                `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`
+            );
+            return { success: true, message: `Searching YouTube for "${query}" in browser` };
+        }
+    },
+});

@@ -28,7 +28,8 @@ interface ScreenContent {
 }
 
 toolRegistry.register("check_accessibility", {
-    description: "Check if the accessibility service is enabled. Must be enabled before using screen control tools.",
+    description:
+        "Check if the accessibility service is enabled. Must be enabled before using screen control tools.",
     parameters: z.object({}),
     execute: async () => {
         if (Platform.OS !== "android") {
@@ -50,7 +51,8 @@ toolRegistry.register("check_accessibility", {
 });
 
 toolRegistry.register("open_accessibility_settings", {
-    description: "Open Android accessibility settings so the user can enable Tangent's accessibility service.",
+    description:
+        "Open Android accessibility settings so the user can enable Tangent's accessibility service.",
     parameters: z.object({}),
     execute: async () => {
         if (Platform.OS !== "android") {
@@ -61,7 +63,8 @@ toolRegistry.register("open_accessibility_settings", {
             await TangentAccessibility.openSettings();
             return {
                 success: true,
-                message: "Opened accessibility settings. Ask the user to find 'Tangent' in the list and enable it.",
+                message:
+                    "Opened accessibility settings. Ask the user to find 'Tangent' in the list and enable it.",
             };
         } catch (error) {
             return { error: `Failed to open settings: ${error}` };
@@ -97,7 +100,9 @@ Use this to understand what's on screen before taking actions.`,
                     scrollable: el.scrollable,
                 }));
 
-            log.info(`Screen has ${elements.length} interactive elements in ${content.packageName}`);
+            log.info(
+                `Screen has ${elements.length} interactive elements in ${content.packageName}`
+            );
 
             return {
                 app: content.packageName,
@@ -171,7 +176,9 @@ First tap on a text field to focus it, then use this to type.`,
             log.info(`Type "${text.slice(0, 20)}...": ${success ? "success" : "failed"}`);
             return {
                 success,
-                message: success ? `Typed "${text}"` : "No focused text field found. Tap a text field first.",
+                message: success
+                    ? `Typed "${text}"`
+                    : "No focused text field found. Tap a text field first.",
             };
         } catch (error) {
             return { error: `Failed to type: ${error}` };
@@ -250,5 +257,16 @@ toolRegistry.register("open_notifications", {
         } catch (error) {
             return { error: `Failed: ${error}` };
         }
+    },
+});
+
+toolRegistry.register("wait", {
+    description: "Wait for a moment to let the app load or animations complete.",
+    parameters: z.object({
+        seconds: z.number().optional().describe("Seconds to wait (default: 1)"),
+    }),
+    execute: async ({ seconds = 1 }) => {
+        await new Promise(resolve => setTimeout(resolve, seconds * 1000));
+        return { success: true, message: `Waited ${seconds} second(s)` };
     },
 });

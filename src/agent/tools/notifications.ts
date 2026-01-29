@@ -76,7 +76,7 @@ toolRegistry.register("cancel_reminder", {
         notificationId: z.string().describe("The notification ID to cancel"),
     }),
     execute: async ({ notificationId }) => {
-        const Notif = await getNotifications(); 
+        const Notif = await getNotifications();
         log.info(`Canceling reminder: ${notificationId}`);
         try {
             await Notif.cancelScheduledNotificationAsync(notificationId);

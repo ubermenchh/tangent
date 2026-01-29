@@ -1,9 +1,6 @@
 import { toolRegistry } from "./registry";
 
-async function safeLoad(
-    name: string,
-    loader: () => Promise<unknown>
-): Promise<void> {
+async function safeLoad(name: string, loader: () => Promise<unknown>): Promise<void> {
     try {
         await loader();
     } catch (error) {

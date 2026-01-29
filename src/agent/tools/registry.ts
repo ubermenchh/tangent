@@ -47,7 +47,7 @@ class ToolRegistry {
         this.tools.set(name, aiTool);
         log.debug(`Registered tool: ${name}`);
     }
-    
+
     registerLoader(loader: LazyToolLoader): void {
         this.loaders.push(loader);
     }
@@ -57,9 +57,7 @@ class ToolRegistry {
 
         log.info(`Initializing ${this.loaders.length} tool loaders`);
 
-        const results = await Promise.allSettled(
-            this.loaders.map(loader => loader())
-        );
+        const results = await Promise.allSettled(this.loaders.map(loader => loader()));
 
         results.forEach((result, i) => {
             if (result.status === "rejected") {

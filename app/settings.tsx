@@ -9,6 +9,7 @@ import {
     PermissionsAndroid,
     ActivityIndicator,
     ScrollView,
+    KeyboardAvoidingView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -150,11 +151,11 @@ export default function SettingsScreen() {
     const getStatusColor = (status: PermissionStatus) => {
         switch (status) {
             case "granted":
-                return "text-green-500";
+                return "text-tokyo-green";
             case "denied":
-                return "text-red-500";
+                return "text-tokyo-red";
             default:
-                return "text-zinc-500";
+                return "text-tokyo-fg-comment";
         }
     };
 
@@ -180,34 +181,35 @@ export default function SettingsScreen() {
     };
 
     return (
-        <View
-            className="flex-1 bg-zinc-950"
+        <KeyboardAvoidingView
+            className="flex-1 bg-tokyo-bg"
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
         >
             {/* Header */}
-            <View className="flex-row px-4 py-3 items-center gap-3 border-b border-zinc-800">
+            <View className="flex-row px-4 py-3 items-center gap-3 border-b border-tokyo-bg-hightlight">
                 <TouchableOpacity className="p-2 rounded-full" onPress={handleBack}>
                     <ArrowLeft size={24} color="white" />
                 </TouchableOpacity>
-                <Text className="text-white text-2xl font-bold">Settings</Text>
+                <Text className="text-tokyo-fg text-2xl font-bold">Settings</Text>
             </View>
 
             {/* Content */}
             <ScrollView className="flex-1 px-4 py-4" contentContainerStyle={{ gap: 24 }}>
                 {/* Gemini API Key Section */}
                 <View className="gap-3">
-                    <Text className="text-white text-lg font-semibold">Gemini API Key</Text>
-                    <Text className="text-zinc-400 text-sm">
+                    <Text className="text-tokyo-fg text-lg font-semibold">Gemini API Key</Text>
+                    <Text className="text-tokyo-fg-dark text-sm">
                         Get your API key from Google AI Studio (aistudio.google.com)
                     </Text>
 
                     <View className="flex-row gap-2">
                         <TextInput
-                            className="flex-1 bg-zinc-900 text-white px-4 py-3 rounded-xl text-base border border-zinc-700"
+                            className="flex-1 bg-tokyo-storm text-tokyo-fg px-4 py-3 rounded-xl text-base border border-tokyo-terminal"
                             value={apiKey}
                             onChangeText={setApiKey}
                             placeholder="Enter your Gemini API key..."
-                            placeholderTextColor="#71717a"
+                            placeholderTextColor="#565f89"
                             secureTextEntry={!showKey}
                         />
                         <TouchableOpacity
@@ -215,9 +217,9 @@ export default function SettingsScreen() {
                             onPress={() => setShowKey(!showKey)}
                         >
                             {showKey ? (
-                                <EyeOff size={20} color="#71717a" />
+                                <EyeOff size={20} color="#565f89" />
                             ) : (
-                                <Eye size={20} color="#71717a" />
+                                <Eye size={20} color="#565f89" />
                             )}
                         </TouchableOpacity>
                     </View>
@@ -225,7 +227,7 @@ export default function SettingsScreen() {
                     <TouchableOpacity
                         className={cn(
                             "py-3 rounded-xl items-center flex-row justify-center gap-2",
-                            hasChanges ? "bg-blue-600" : "bg-zinc-800"
+                            hasChanges ? "bg-tokyo-blue" : "bg-tokyo-bg-highlight"
                         )}
                         onPress={handleSave}
                         disabled={!hasChanges}
@@ -234,7 +236,7 @@ export default function SettingsScreen() {
                         <Text
                             className={cn(
                                 "font-semibold",
-                                hasChanges ? "text-white" : "text-zinc-500"
+                                hasChanges ? "text-tokyo-fg" : "text-tokyo-fg-comment"
                             )}
                         >
                             {saved ? "Saved!" : "Save API Key"}
@@ -246,23 +248,23 @@ export default function SettingsScreen() {
                 <View className="gap-3">
                     <View className="flex-row items-center gap-2">
                         <FolderSearch size={20} color="white" />
-                        <Text className="text-white text-lg font-semibold">File Index</Text>
+                        <Text className="text-tokyo-fg text-lg font-semibold">File Index</Text>
                     </View>
-                    <Text className="text-zinc-400 text-sm">
+                    <Text className="text-tokyo-fg-dark text-sm">
                         Index local files to enable natural language search
                     </Text>
 
                     {/* Index Stats */}
-                    <View className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+                    <View className="bg-tokyo-storm p-4 rounded-xl border border-tokyo-bg-hightlight">
                         <View className="flex-row justify-between mb-3">
-                            <Text className="text-zinc-400 text-sm">Files indexed</Text>
-                            <Text className="text-white text-sm font-medium">
+                            <Text className="text-tokyo-fg-dark text-sm">Files indexed</Text>
+                            <Text className="text-tokyo-fg text-sm font-medium">
                                 {indexStats.count}
                             </Text>
                         </View>
                         <View className="flex-row justify-between">
-                            <Text className="text-zinc-400 text-sm">Last updated</Text>
-                            <Text className="text-white text-sm font-medium">
+                            <Text className="text-tokyo-fg-dark text-sm">Last updated</Text>
+                            <Text className="text-tokyo-fg text-sm font-medium">
                                 {formatLastUpdated(indexStats.lastUpdated)}
                             </Text>
                         </View>
@@ -270,20 +272,23 @@ export default function SettingsScreen() {
 
                     {/* Progress indicator */}
                     {isIndexing && indexProgress && (
-                        <View className="bg-zinc-900 p-4 rounded-xl border border-blue-600">
+                        <View className="bg-tokyo-storm p-4 rounded-xl border border-tokyo-blue">
                             <View className="flex-row items-center gap-3 mb-2">
-                                <ActivityIndicator size="small" color="#3b82f6" />
-                                <Text className="text-blue-400 text-sm font-medium capitalize">
+                                <ActivityIndicator size="small" color="#7aa2f7" />
+                                <Text className="text-tokyo-blue text-sm font-medium capitalize">
                                     {indexProgress.phase}...
                                 </Text>
                             </View>
                             {indexProgress.phase === "embedding" && (
                                 <>
-                                    <Text className="text-zinc-400 text-xs mb-1">
+                                    <Text className="text-tokyo-fg-dark text-xs mb-1">
                                         {indexProgress.current} / {indexProgress.total} files
                                     </Text>
                                     {indexProgress.file && (
-                                        <Text className="text-zinc-500 text-xs" numberOfLines={1}>
+                                        <Text
+                                            className="text-tokyo-fg-comment text-xs"
+                                            numberOfLines={1}
+                                        >
                                             {indexProgress.file}
                                         </Text>
                                     )}
@@ -297,7 +302,9 @@ export default function SettingsScreen() {
                         <TouchableOpacity
                             className={cn(
                                 "flex-1 py-3 rounded-xl items-center flex-row justify-center gap-2",
-                                isIndexing || !geminiApiKey ? "bg-zinc-800" : "bg-blue-600"
+                                isIndexing || !geminiApiKey
+                                    ? "bg-tokyo-bg-highlight"
+                                    : "bg-tokyo-blue"
                             )}
                             onPress={handleStartIndexing}
                             disabled={isIndexing || !geminiApiKey}
@@ -305,12 +312,12 @@ export default function SettingsScreen() {
                             {isIndexing ? (
                                 <ActivityIndicator size="small" color="white" />
                             ) : (
-                                <RefreshCw size={18} color={geminiApiKey ? "white" : "#71717a"} />
+                                <RefreshCw size={18} color={geminiApiKey ? "white" : "#565f89"} />
                             )}
                             <Text
                                 className={cn(
                                     "font-semibold",
-                                    geminiApiKey ? "text-white" : "text-zinc-500"
+                                    geminiApiKey ? "text-tokyo-fg" : "text-tokyo-fg-comment"
                                 )}
                             >
                                 {isIndexing ? "Indexing..." : "Start Indexing"}
@@ -320,19 +327,19 @@ export default function SettingsScreen() {
                         <TouchableOpacity
                             className={cn(
                                 "px-4 py-3 rounded-xl items-center justify-center",
-                                indexStats.count > 0 ? "bg-red-600/20" : "bg-zinc-800"
+                                indexStats.count > 0 ? "bg-tokyo-red/20" : "bg-tokyo-bg-highlight"
                             )}
                             onPress={handleClearIndex}
                             disabled={indexStats.count === 0 || isIndexing}
                         >
                             <Trash2
                                 size={18}
-                                color={indexStats.count > 0 ? "#ef4444" : "#71717a"}
+                                color={indexStats.count > 0 ? "#f7768e" : "#565f89"}
                             />
                         </TouchableOpacity>
                     </View>
 
-                    <Text className="text-zinc-500 text-xs">
+                    <Text className="text-tokyo-comment text-xs">
                         Scans Download, Documents, and DCIM folders for text files
                     </Text>
                 </View>
@@ -341,18 +348,20 @@ export default function SettingsScreen() {
                 <View className="gap-3">
                     <View className="flex-row items-center gap-2">
                         <Shield size={20} color="white" />
-                        <Text className="text-white text-lg font-semibold">Permissions</Text>
+                        <Text className="text-tokyo-fg text-lg font-semibold">Permissions</Text>
                     </View>
-                    <Text className="text-zinc-400 text-sm">
+                    <Text className="text-tokyo-fg-dark text-sm">
                         Grant permissions to enable all features
                     </Text>
 
                     {/* SMS Permission */}
-                    <View className="bg-zinc-900 p-4 rounded-xl flex-row justify-between items-center border border-zinc-800">
+                    <View className="bg-tokyo-storm p-4 rounded-xl flex-row justify-between items-center border border-tokyo-bg-hightlight">
                         <View className="flex-row gap-3 items-center flex-1">
                             <MessageSquare size={24} color="white" />
                             <View className="flex-1">
-                                <Text className="text-white text-base font-medium">Send SMS</Text>
+                                <Text className="text-tokyo-fg text-base font-medium">
+                                    Send SMS
+                                </Text>
                                 <Text className={cn("text-sm", getStatusColor(smsPermission))}>
                                     {getStatusText(smsPermission)}
                                 </Text>
@@ -361,7 +370,9 @@ export default function SettingsScreen() {
                         <TouchableOpacity
                             className={cn(
                                 "px-4 py-2 rounded-lg",
-                                smsPermission === "granted" ? "bg-zinc-800" : "bg-blue-600"
+                                smsPermission === "granted"
+                                    ? "bg-tokyo-bg-highlight"
+                                    : "bg-tokyo-blue"
                             )}
                             onPress={
                                 smsPermission === "granted"
@@ -372,7 +383,9 @@ export default function SettingsScreen() {
                             <Text
                                 className={cn(
                                     "text-sm font-semibold",
-                                    smsPermission === "granted" ? "text-zinc-400" : "text-white"
+                                    smsPermission === "granted"
+                                        ? "text-tokyo-fg-dark"
+                                        : "text-tokyo-fg"
                                 )}
                             >
                                 {smsPermission === "granted" ? "Manage" : "Grant"}
@@ -381,11 +394,13 @@ export default function SettingsScreen() {
                     </View>
 
                     {/* Contacts Permission */}
-                    <View className="bg-zinc-900 p-4 rounded-xl flex-row justify-between items-center border border-zinc-800">
+                    <View className="bg-tokyo-storm p-4 rounded-xl flex-row justify-between items-center border border-tokyo-bg-hightlight">
                         <View className="flex-row gap-3 items-center flex-1">
                             <Users size={24} color="white" />
                             <View className="flex-1">
-                                <Text className="text-white text-base font-medium">Contacts</Text>
+                                <Text className="text-tokyo-fg text-base font-medium">
+                                    Contacts
+                                </Text>
                                 <Text className={cn("text-sm", getStatusColor(contactsPermission))}>
                                     {getStatusText(contactsPermission)}
                                 </Text>
@@ -394,7 +409,9 @@ export default function SettingsScreen() {
                         <TouchableOpacity
                             className={cn(
                                 "px-4 py-2 rounded-lg",
-                                contactsPermission === "granted" ? "bg-zinc-800" : "bg-blue-600"
+                                contactsPermission === "granted"
+                                    ? "bg-tokyo-bg-highlight"
+                                    : "bg-tokyo-blue"
                             )}
                             onPress={
                                 contactsPermission === "granted"
@@ -406,8 +423,8 @@ export default function SettingsScreen() {
                                 className={cn(
                                     "text-sm font-semibold",
                                     contactsPermission === "granted"
-                                        ? "text-zinc-400"
-                                        : "text-white"
+                                        ? "text-tokyo-fg-dark"
+                                        : "text-tokyo-fg"
                                 )}
                             >
                                 {contactsPermission === "granted" ? "Manage" : "Grant"}
@@ -417,14 +434,14 @@ export default function SettingsScreen() {
                 </View>
 
                 {/* Info */}
-                <View className="p-4 bg-zinc-900 rounded-xl border border-zinc-800 gap-2">
-                    <Text className="text-white text-base font-medium">About Tangent</Text>
-                    <Text className="text-zinc-400 text-sm">
+                <View className="p-4 bg-tokyo-storm rounded-xl border border-tokyo-bg-hightlight gap-2">
+                    <Text className="text-tokyo-fg text-base font-medium">About Tangent</Text>
+                    <Text className="text-tokyo-fg-dark text-sm">
                         Tangent uses Gemini to understand your requests and execute actions on your
                         phone. Your API key is stored securely on your device.
                     </Text>
                 </View>
             </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
