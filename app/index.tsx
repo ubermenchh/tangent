@@ -64,15 +64,11 @@ export default function HomeScreen() {
                     <ChatInput centered />
                 </KeyboardAwareScrollView>
             ) : (
-                <KeyboardAvoidingView
-                    style={{ flex: 1 }}
-                    behavior="padding"
-                    keyboardVerticalOffset={insets.top + 56}
-                >
+                <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
                     <View style={{ flex: 1 }}>
                         <MessageList />
                     </View>
-                    <View style={{ paddingBottom: insets.bottom }}>
+                    <View>
                         <ChatInput />
                     </View>
                 </KeyboardAvoidingView>

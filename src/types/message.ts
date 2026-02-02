@@ -1,5 +1,5 @@
 export type MessageRole = "user" | "assistant";
-export type MessageStatus = "pending" | "streaming" | "complete" | "error";
+export type MessageStatus = "pending" | "streaming" | "complete" | "error" | "thinking";
 
 export interface ToolCall {
     id: string;

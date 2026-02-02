@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { View, TextInput, TouchableOpacity, ActivityIndicator, Keyboard } from "react-native";
-import { Send } from "lucide-react-native";
+import { Send, Square } from "lucide-react-native";
 import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { Agent } from "@/agent";
@@ -17,7 +17,7 @@ interface ChatInputProps {
 export function ChatInput({ centered = false }: ChatInputProps) {
     const [text, setText] = useState("");
     const [inputHeight, setInputHeight] = useState(48);
-    const { addMessage, updateMessage, setLoading, isLoading } = useChatStore();
+    const { addMessage, updateMessage, appendToMessage, appendToReasoning, setLoading, isLoading } = useChatStore();
     const { geminiApiKey } = useSettingsStore();
 
     const agentRef = useRef<Agent | null>(null);
@@ -55,16 +55,51 @@ export function ChatInput({ centered = false }: ChatInputProps) {
             const history = useChatStore.getState().messages.slice(0, -1);
             log.debug(`Processing with ${history.length} messages in history`);
 
-            const response = await agentRef.current.processMessage(trimmed, history);
+            // Use streaming (simulated) for progressive text display
+            for await (const chunk of agentRef.current.processMessageStream(trimmed, history)) {
+                switch (chunk.type) {
+                    case "thinking":
+                        // Show thinking indicator (optional: update message)
+                        updateMessage(assistantMsgId, { status: "thinking" });
+                        break;
+                    case "reasoning":
+                        appendToReasoning(assistantMsgId, chunk.content || "");
+                        break;
+                    case "text":
+                        appendToMessage(assistantMsgId, chunk.content || "");
+                        break;
+                    case "tool-call":
+                        updateMessage(assistantMsgId, {
+                            status: "streaming",
+                            toolCalls: [
+                                ...(useChatStore
+                                    .getState()
+                                    .messages.find(m => m.id === assistantMsgId)?.toolCalls || []),
+                                chunk.toolCall!,
+                            ],
+                        });
+                        break;
+                    case "done":
+                        updateMessage(assistantMsgId, { status: "complete" });
+                        break;
+                    case "cancelled":
+                        updateMessage(assistantMsgId, {
+                            status: "complete",
+                            content:
+                                useChatStore.getState().messages.find(m => m.id === assistantMsgId)
+                                    ?.content + "\n\n[Cancelled]",
+                        });
+                        break;
+                    case "error":
+                        updateMessage(assistantMsgId, {
+                            content: `Error: ${chunk.content}`,
+                            status: "error",
+                        });
+                        break;
+                }
+            }
 
-            log.info(`Response received in ${Date.now() - startTime}ms`);
-            log.debug(`Tool calls: ${response.toolCalls.length}`);
-
-            updateMessage(assistantMsgId, {
-                content: response.content,
-                toolCalls: response.toolCalls,
-                status: "complete",
-            });
+            log.info(`Response completed in ${Date.now() - startTime}ms`);
         } catch (error) {
             log.error(`Agent error after ${Date.now() - startTime}ms`, error);
             updateMessage(assistantMsgId, {
@@ -74,6 +109,22 @@ export function ChatInput({ centered = false }: ChatInputProps) {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleCancel = () => {
+        log.info("Cancelling current request");
+        agentRef.current?.cancel();
+
+        const messages = useChatStore.getState().messages;
+        const streamingMsg = messages.find(m => m.status === "streaming");
+        if (streamingMsg) {
+            updateMessage(streamingMsg.id, {
+                status: "complete",
+                content:
+                    streamingMsg.content + (streamingMsg.content ? "\n\n" : "") + "\n\n[Cancelled]",
+            });
+        }
+        setLoading(false);
     };
 
     const handleContentSizeChange = (event: {
@@ -159,17 +210,16 @@ export function ChatInput({ centered = false }: ChatInputProps) {
             />
             <TouchableOpacity
                 className={cn(
-                    "w-12 h-12 rounded-xl items-center justify-center",
-                    hasText ? "bg-tokyo-blue" : "bg-tokyo-bg-highlight"
+                    "w-12 h-12 rounded-full items-center justify-center",
+                    isLoading ? "bg-red-600" : text.trim() ? "bg-blue-600" : "bg-zinc-800"
                 )}
-                onPress={handleSend}
-                disabled={!hasText || isLoading}
-                accessibilityLabel="Send message"
+                onPress={isLoading ? handleCancel : handleSend}
+                disabled={!isLoading && !text.trim()}
             >
                 {isLoading ? (
-                    <ActivityIndicator color={hasText ? "#1a1b26" : "#565f89"} />
+                    <Square size={16} color="white" fill="white" /> // Stop icon
                 ) : (
-                    <Send size={20} color={hasText ? "#1a1b26" : "#565f89"} />
+                    <Send size={20} color={text.trim() ? "white" : "#71717a"} />
                 )}
             </TouchableOpacity>
         </View>

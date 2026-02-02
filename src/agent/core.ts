@@ -1,4 +1,4 @@
-import { streamText, generateText, ModelMessage as AIMessage, stepCountIs } from "ai";
+import { generateText, ModelMessage as AIMessage, stepCountIs } from "ai";
 import { createModel } from "@/lib/llm";
 import { toolRegistry } from "./tools";
 import { Message, ToolCall } from "../types/message";
@@ -13,10 +13,18 @@ interface AgentConfig {
 export class Agent {
     private apiKey: string;
     private modelId: string;
+    private abortController: AbortController | null = null;
 
     constructor(config: AgentConfig) {
         this.apiKey = config.apiKey;
-        this.modelId = config.model ?? "gemini-3-flash-preview";
+        this.modelId = config.model ?? "gemini-3-pro-preview";
+    }
+
+    cancel() {
+        if (this.abortController) {
+            this.abortController.abort();
+            this.abortController = null;
+        }
     }
 
     async processMessage(
@@ -92,10 +100,20 @@ export class Agent {
         userMessage: string,
         conversationHistory: Message[]
     ): AsyncGenerator<{
-        type: "text" | "tool-call" | "tool-result" | "reasoning" | "done" | "error";
+        type: "text" | "tool-call" | "thinking" | "reasoning" | "done" | "error" | "cancelled";
         content?: string;
         toolCall?: ToolCall;
     }> {
+        this.abortController = new AbortController();
+        const signal = this.abortController.signal;
+
+        if (signal.aborted) {
+            yield { type: "cancelled", content: "Cancelled before start" };
+            return;
+        }
+
+        yield { type: "thinking", content: "Processing your request..." };
+
         const messages: AIMessage[] = conversationHistory.map(msg => ({
             role: msg.role as "user" | "assistant",
             content: msg.content,
@@ -105,24 +123,59 @@ export class Agent {
         const model = createModel(this.apiKey, this.modelId);
         const tools = await toolRegistry.getTools();
 
+        if (signal.aborted) {
+            yield { type: "cancelled", content: "Cancelled" };
+            return;
+        }
+
         try {
-            const result = streamText({
+            logger.info("Agent", `Processing: "${userMessage.slice(0, 50)}..."`);
+            const startTime = Date.now();
+
+            const { text, toolCalls, steps, reasoningText } = await generateText({
                 model,
                 system: SYSTEM_PROMPT,
                 messages,
                 tools,
                 stopWhen: stepCountIs(5),
+                providerOptions: {
+                    google: {
+                        thinkingConfig: {
+                            includeThoughts: true,
+                            thinkingLevel: "high",
+                        }
+                    },
+                },
             });
 
-            for await (const text of result.textStream) {
-                if (text) {
-                    yield { type: "text", content: text };
-                }
+            const duration = Date.now() - startTime;
+            logger.info("Agent", `Response in ${duration}ms, ${steps?.length ?? 0} steps`);
+
+            if (signal.aborted) {
+                yield { type: "cancelled", content: "Cancelled" };
+                return;
             }
 
-            const toolCalls = await result.toolCalls;
-            if (toolCalls && toolCalls.length > 0) {
+            if (reasoningText) {
+    const chunkSize = 8;
+    for (let i = 0; i < reasoningText.length; i += chunkSize) {
+        if (signal.aborted) {
+            yield { type: "cancelled", content: "Cancelled" };
+            return;
+        }
+        const chunk = reasoningText.slice(i, i + chunkSize);
+        yield { type: "reasoning", content: chunk };
+        await new Promise(r => setTimeout(r, 2));
+    }
+}
+
+            if (toolCalls.length > 0) {
                 for (const tc of toolCalls) {
+                    if (signal.aborted) {
+                        yield { type: "cancelled", content: "Cancelled" };
+                        return;
+                    }
+
                     yield {
                         type: "tool-call",
                         toolCall: {
@@ -132,16 +185,54 @@ export class Agent {
                             status: "success",
                         },
                     };
+
+                    await new Promise(r => setTimeout(r, 100));
+                }
+            }
+
+            if (text) {
+                const chunkSize = 8;
+                for (let i = 0; i < text.length; i += chunkSize) {
+                    if (signal.aborted) {
+                        yield { type: "cancelled", content: "Cancelled" };
+                        return;
+                    }
+
+                    const chunk = text.slice(i, i + chunkSize);
+                    yield { type: "text", content: chunk };
+                    await new Promise(r => setTimeout(r, 5));
                 }
             }
 
             yield { type: "done" };
         } catch (error) {
+            if (signal.aborted) {
+                yield { type: "cancelled", content: "Cancelled" };
+                return;
+            }
+
+            if (error === undefined || error === null) {
+                yield { type: "error", content: "Unknown error occurred" };
+                return;
+            }
+
+            if (
+                error instanceof Error &&
+                (error.name === "AbortError" ||
+                    error.message.includes("abort") ||
+                    error.message.includes("cancel"))
+            ) {
+                yield { type: "cancelled", content: "Cancelled" };
+                return;
+            }
+
             logger.error("Agent", "Stream error", error);
             yield {
                 type: "error",
                 content: error instanceof Error ? error.message : "Stream failed",
             };
+        } finally {
+            this.abortController = null;
         }
     }
 }

@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
+import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react-native";
 
 const markdownStyles = {
     body: { color: "#c0caf5", fontSize: 16, lineHeight: 24 },
@@ -51,6 +53,8 @@ export function MessageBubble({ message }: { message: Message }) {
     const isUser = message.role === "user";
     const isStreaming = message.status === "streaming";
     const isError = message.status === "error";
+    const isThinking = message.status === "thinking";
+    const [reasoningExpanded, setReasoningExpanded] = useState(false);
 
     const handleLongPress = async () => {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -83,6 +87,30 @@ export function MessageBubble({ message }: { message: Message }) {
                     </View>
                 )}
 
+                {/* Reasoning Content */}
+                {message.reasoning && (
+    <Pressable 
+        onPress={() => setReasoningExpanded(!reasoningExpanded)}
+        className="mb-2 p-2 bg-tokyo-purple/10 rounded-lg border border-tokyo-purple/30"
+    >
+        <View className="flex-row items-center justify-between">
+            <Text className="text-tokyo-purple text-xs font-semibold">
+                Thinking
+            </Text>
+            {reasoningExpanded ? (
+                <ChevronDown size={14} color="#bb9af7" />
+            ) : (
+                <ChevronRight size={14} color="#bb9af7" />
+            )}
+        </View>
+        {reasoningExpanded && (
+            <Text className="text-tokyo-comment text-sm mt-1">
+                {message.reasoning}
+            </Text>
+        )}
+    </Pressable>
+)}
+
                 {/* Message content */}
                 {isUser ? (
                     <Text className="text-tokyo-bg text-base leading-6">{message.content}</Text>
@@ -91,7 +119,7 @@ export function MessageBubble({ message }: { message: Message }) {
                 ) : null}
 
                 {/* Streaming indicator */}
-                {isStreaming && !message.content && (
+                {(isThinking || isStreaming) && !message.content && (
                     <View className="flex-row gap-1 py-1">
                         <Animated.View
                             className="w-2 h-2 rounded-full bg-tokyo-blue"

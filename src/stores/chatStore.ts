@@ -11,6 +11,7 @@ interface ChatState {
     addMessage: (role: Message["role"], content: string, options?: Partial<Message>) => string;
     updateMessage: (id: string, updates: Partial<Message>) => void;
     appendToMessage: (id: string, text: string) => void;
+    appendToReasoning: (id: string, text: string) => void;
     clearMessages: () => void;
     setLoading: (loading: boolean) => void;
 }
@@ -50,6 +51,13 @@ export const useChatStore = create<ChatState>(set => ({
             ),
         }));
     },
+
+    appendToReasoning: (id, text) =>
+        set(state => ({
+            messages: state.messages.map(m => 
+                m.id === id ? { ...m, reasoning: (m.reasoning || "") + text } : m
+            ),
+        })),
 
     clearMessages: () => {
         log.info("Clearing all messages");

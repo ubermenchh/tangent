@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.8",
+    "@ai-sdk/openai": "^3.0.23",
     "@exalabs/ai-sdk": "^1.0.5",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",
