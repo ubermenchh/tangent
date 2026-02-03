@@ -54,7 +54,7 @@ export const useChatStore = create<ChatState>(set => ({
 
     appendToReasoning: (id, text) =>
         set(state => ({
-            messages: state.messages.map(m => 
+            messages: state.messages.map(m =>
                 m.id === id ? { ...m, reasoning: (m.reasoning || "") + text } : m
             ),
         })),

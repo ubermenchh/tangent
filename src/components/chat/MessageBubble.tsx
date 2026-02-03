@@ -89,27 +89,27 @@ export function MessageBubble({ message }: { message: Message }) {
 
                 {/* Reasoning Content */}
                 {message.reasoning && (
-    <Pressable 
-        onPress={() => setReasoningExpanded(!reasoningExpanded)}
-        className="mb-2 p-2 bg-tokyo-purple/10 rounded-lg border border-tokyo-purple/30"
-    >
-        <View className="flex-row items-center justify-between">
-            <Text className="text-tokyo-purple text-xs font-semibold">
-                Thinking
-            </Text>
-            {reasoningExpanded ? (
-                <ChevronDown size={14} color="#bb9af7" />
-            ) : (
-                <ChevronRight size={14} color="#bb9af7" />
-            )}
-        </View>
-        {reasoningExpanded && (
-            <Text className="text-tokyo-comment text-sm mt-1">
-                {message.reasoning}
-            </Text>
-        )}
-    </Pressable>
-)}
+                    <Pressable
+                        onPress={() => setReasoningExpanded(!reasoningExpanded)}
+                        className="mb-2 p-2 bg-tokyo-purple/10 rounded-lg border border-tokyo-purple/30"
+                    >
+                        <View className="flex-row items-center justify-between">
+                            <Text className="text-tokyo-purple text-xs font-semibold">
+                                Thinking
+                            </Text>
+                            {reasoningExpanded ? (
+                                <ChevronDown size={14} color="#bb9af7" />
+                            ) : (
+                                <ChevronRight size={14} color="#bb9af7" />
+                            )}
+                        </View>
+                        {reasoningExpanded && (
+                            <Text className="text-tokyo-comment text-sm mt-1">
+                                {message.reasoning}
+                            </Text>
+                        )}
+                    </Pressable>
+                )}
 
                 {/* Message content */}
                 {isUser ? (

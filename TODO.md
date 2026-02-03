@@ -24,8 +24,8 @@
 - [ ] Improve error handling (graceful failures)
 
 ### UX Polish
-- [ ] Streaming responses (show text as it generates)
-- [ ] Tool call visualization (show what agent is doing)
+- [x] Streaming responses (show text as it generates)
+- [x] Tool call visualization (show what agent is doing)
 - [x] Cancel button (stop current task)
 - [ ] Clear chat (reset conversation)
 - [ ] Chat persistence (save/load conversations)

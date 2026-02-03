@@ -7,6 +7,8 @@ import { Agent } from "@/agent";
 import { cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import Animated, { FadeIn } from "react-native-reanimated";
+import { backgroundTaskService } from "@/services/backgroundTaskService";
+import { useTaskStore } from "@/stores/taskStore";
 
 const log = logger.create("ChatInput");
 
@@ -17,7 +19,8 @@ interface ChatInputProps {
 export function ChatInput({ centered = false }: ChatInputProps) {
     const [text, setText] = useState("");
     const [inputHeight, setInputHeight] = useState(48);
-    const { addMessage, updateMessage, appendToMessage, appendToReasoning, setLoading, isLoading } = useChatStore();
+    const { addMessage, updateMessage, appendToMessage, appendToReasoning, setLoading, isLoading } =
+        useChatStore();
     const { geminiApiKey } = useSettingsStore();
 
     const agentRef = useRef<Agent | null>(null);
@@ -108,6 +111,32 @@ export function ChatInput({ centered = false }: ChatInputProps) {
             });
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSendBackground = async () => {
+        const trimmed = text.trim();
+        if (!trimmed || !geminiApiKey) return;
+
+        Keyboard.dismiss();
+        log.info(`Starting background task: "${trimmed.slice(0, 50)}..."`);
+
+        // Add to task store
+        const taskId = useTaskStore.getState().addTask(trimmed);
+
+        // Clear input
+        setText("");
+        setInputHeight(48);
+
+        // Start background execution
+        try {
+            await backgroundTaskService.startTask(taskId, trimmed);
+            // Optionally show a toast/alert that task started
+        } catch (error) {
+            log.error("Failed to start background task", error);
+            useTaskStore
+                .getState()
+                .failTask(taskId, error instanceof Error ? error.message : "Failed to start");
         }
     };
 
@@ -214,6 +243,8 @@ export function ChatInput({ centered = false }: ChatInputProps) {
                     isLoading ? "bg-red-600" : text.trim() ? "bg-blue-600" : "bg-zinc-800"
                 )}
                 onPress={isLoading ? handleCancel : handleSend}
+                onLongPress={handleSendBackground}
+                delayLongPress={500}
                 disabled={!isLoading && !text.trim()}
             >
                 {isLoading ? (

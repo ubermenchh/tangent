@@ -43,7 +43,9 @@
         "android.permission.ACTIVITY_RECOGNITION",
         "android.permission.BODY_SENSORS",
         "android.permission.VIBRATE",
-        "android.permission.QUERY_ALL_PACKAGES"
+        "android.permission.QUERY_ALL_PACKAGES",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
       ],
       "package": "com.ubermenchh.tangent"
     },

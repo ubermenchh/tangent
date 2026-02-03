@@ -1,11 +1,12 @@
 import "../global.css";
 import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { useSettingsStore } from "@/stores/settingsStore";
 import * as SplashScreen from "expo-splash-screen";
+import * as Linking from "expo-linking";
 import {
     useFonts,
     Inter_400Regular,
@@ -40,6 +41,24 @@ export default function RootLayout() {
             SplashScreen.hideAsync().catch(console.warn);
         }
     }, [settingsLoaded]);
+
+    useEffect(() => {
+        const handleDeepLink = ({ url }: { url: string }) => {
+            const parsed = Linking.parse(url);
+            // Handle tangent://task/{taskId}
+            if (parsed.path?.startsWith("task/")) {
+                const taskId = parsed.path.replace("task/", "");
+                router.push(`/tasks?highlight=${taskId}`);
+            }
+        };
+
+        Linking.getInitialURL().then(url => {
+            if (url) handleDeepLink({ url });
+        });
+
+        const subscription = Linking.addEventListener("url", handleDeepLink);
+        return () => subscription.remove();
+    }, []);
 
     if (!fontLoaded || !settingsLoaded) {
         return null;

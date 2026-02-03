@@ -143,7 +143,7 @@ export class Agent {
                         thinkingConfig: {
                             includeThoughts: true,
                             thinkingLevel: "high",
-                        }
+                        },
                     },
                 },
             });
@@ -157,17 +157,17 @@ export class Agent {
             }
 
             if (reasoningText) {
-    const chunkSize = 8;
-    for (let i = 0; i < reasoningText.length; i += chunkSize) {
-        if (signal.aborted) {
-            yield { type: "cancelled", content: "Cancelled" };
-            return;
-        }
-        const chunk = reasoningText.slice(i, i + chunkSize);
-        yield { type: "reasoning", content: chunk };
-        await new Promise(r => setTimeout(r, 2));
-    }
-}
+                const chunkSize = 8;
+                for (let i = 0; i < reasoningText.length; i += chunkSize) {
+                    if (signal.aborted) {
+                        yield { type: "cancelled", content: "Cancelled" };
+                        return;
+                    }
+                    const chunk = reasoningText.slice(i, i + chunkSize);
+                    yield { type: "reasoning", content: chunk };
+                    await new Promise(r => setTimeout(r, 2));
+                }
+            }
 
             if (toolCalls.length > 0) {
                 for (const tc of toolCalls) {

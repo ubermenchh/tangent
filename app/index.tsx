@@ -1,7 +1,7 @@
 import { View, Text, Image, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Settings, Plus } from "lucide-react-native";
+import { Settings, Plus, ListTodo } from "lucide-react-native";
 import { MessageList } from "@/components/chat/MessageList";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { useChatStore } from "@/stores/chatStore";
@@ -29,6 +29,34 @@ export default function HomeScreen() {
                 </View>
 
                 <View className="flex-row items-center gap-1">
+                    {messages.length > 0 && (
+                        <TouchableOpacity
+                            className="p-2 rounded-full active:bg-tokyo-bg-highlight"
+                            onPress={clearMessages}
+                            accessibilityLabel="New chat"
+                        >
+                            <Plus size={24} color="#7aa2f7" />
+                        </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                        className="p-2 rounded-full active:bg-tokyo-bg-highlight"
+                        onPress={() => router.push("/settings")}
+                        accessibilityLabel="Settings"
+                    >
+                        <Settings size={24} color="#c0caf5" />
+                    </TouchableOpacity>
+                </View>
+
+                <View className="flex-row items-center gap-1">
+                    {/* Tasks button */}
+                    <TouchableOpacity
+                        className="p-2 rounded-full active:bg-tokyo-bg-highlight"
+                        onPress={() => router.push("/tasks")}
+                        accessibilityLabel="Background tasks"
+                    >
+                        <ListTodo size={24} color="#c0caf5" />
+                    </TouchableOpacity>
+
                     {messages.length > 0 && (
                         <TouchableOpacity
                             className="p-2 rounded-full active:bg-tokyo-bg-highlight"
