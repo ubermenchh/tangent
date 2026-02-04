@@ -4,6 +4,7 @@ import { toolRegistry } from "./tools";
 import { Message, ToolCall } from "../types/message";
 import { logger } from "@/lib/logger";
 import { SYSTEM_PROMPT } from "./prompt";
+import { createAsyncChannel } from "@/lib/asyncChannel";
 
 interface AgentConfig {
     apiKey: string;
@@ -100,7 +101,7 @@ export class Agent {
         userMessage: string,
         conversationHistory: Message[]
     ): AsyncGenerator<{
-        type: "text" | "tool-call" | "thinking" | "reasoning" | "done" | "error" | "cancelled";
+        type: "text" | "tool-call" | "tool-call-end" | "thinking" | "reasoning" | "done" | "error" | "cancelled";
         content?: string;
         toolCall?: ToolCall;
     }> {
@@ -128,111 +129,152 @@ export class Agent {
             return;
         }
 
-        try {
-            logger.info("Agent", `Processing: "${userMessage.slice(0, 50)}..."`);
-            const startTime = Date.now();
+        // Create channel for real-time streaming
+        type StreamChunk = {
+            type: "text" | "tool-call" | "tool-call-end" | "thinking" | "reasoning" | "done" | "error" | "cancelled";
+            content?: string;
+            toolCall?: ToolCall;
+        };
+        const channel = createAsyncChannel<StreamChunk>();
 
-            const { text, toolCalls, steps, reasoningText } = await generateText({
-                model,
-                system: SYSTEM_PROMPT,
-                messages,
-                tools,
-                stopWhen: stepCountIs(5),
-                providerOptions: {
-                    google: {
-                        thinkingConfig: {
-                            includeThoughts: true,
-                            thinkingLevel: "high",
+        // Track running tool calls by name to update status
+        const runningTools = new Map<string, ToolCall>();
+
+        // Subscribe to tool events for real-time updates
+        const unsubscribe = toolRegistry.onToolEvent(event => {
+            if (signal.aborted) return;
+
+            if (event.type === "start") {
+                const toolCall: ToolCall = {
+                    id: `tool_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                    name: event.toolName,
+                    arguments: event.args as Record<string, unknown>,
+                    status: "running",
+                };
+                runningTools.set(event.toolName, toolCall);
+                logger.debug("Agent", `Tool started: ${event.toolName}`);
+                channel.push({ type: "tool-call", toolCall });
+            } else if (event.type === "end") {
+                const toolCall = runningTools.get(event.toolName);
+                if (toolCall) {
+                    toolCall.status = "success";
+                    toolCall.result = event.result; // Include the result
+                    logger.debug("Agent", `Tool completed: ${event.toolName}`);
+                    channel.push({ type: "tool-call-end", toolCall });
+                    runningTools.delete(event.toolName);
+                }
+            }
+        });
+
+        // Run generateText in background and push results to channel
+        const generatePromise = (async () => {
+            try {
+                logger.info("Agent", `Processing: "${userMessage.slice(0, 50)}..."`);
+                const startTime = Date.now();
+
+                const { text, steps, reasoningText } = await generateText({
+                    model,
+                    system: SYSTEM_PROMPT,
+                    messages,
+                    tools,
+                    stopWhen: stepCountIs(5),
+                    providerOptions: {
+                        google: {
+                            thinkingConfig: {
+                                includeThoughts: true,
+                                thinkingLevel: "high",
+                            },
                         },
                     },
-                },
-            });
+                });
 
-            const duration = Date.now() - startTime;
-            logger.info("Agent", `Response in ${duration}ms, ${steps?.length ?? 0} steps`);
+                const duration = Date.now() - startTime;
+                logger.info("Agent", `Response in ${duration}ms, ${steps?.length ?? 0} steps`);
 
-            if (signal.aborted) {
-                yield { type: "cancelled", content: "Cancelled" };
-                return;
-            }
+                if (signal.aborted) {
+                    channel.push({ type: "cancelled", content: "Cancelled" });
+                    return;
+                }
 
-            if (reasoningText) {
-                const chunkSize = 8;
-                for (let i = 0; i < reasoningText.length; i += chunkSize) {
-                    if (signal.aborted) {
-                        yield { type: "cancelled", content: "Cancelled" };
-                        return;
+                // Push reasoning chunks
+                if (reasoningText) {
+                    const chunkSize = 8;
+                    for (let i = 0; i < reasoningText.length; i += chunkSize) {
+                        if (signal.aborted) {
+                            channel.push({ type: "cancelled", content: "Cancelled" });
+                            return;
+                        }
+                        const chunk = reasoningText.slice(i, i + chunkSize);
+                        channel.push({ type: "reasoning", content: chunk });
+                        await new Promise(r => setTimeout(r, 2));
                     }
-                    const chunk = reasoningText.slice(i, i + chunkSize);
-                    yield { type: "reasoning", content: chunk };
-                    await new Promise(r => setTimeout(r, 2));
+                }
+
+                // Push text chunks
+                if (text) {
+                    const chunkSize = 8;
+                    for (let i = 0; i < text.length; i += chunkSize) {
+                        if (signal.aborted) {
+                            channel.push({ type: "cancelled", content: "Cancelled" });
+                            return;
+                        }
+                        const chunk = text.slice(i, i + chunkSize);
+                        channel.push({ type: "text", content: chunk });
+                        await new Promise(r => setTimeout(r, 5));
+                    }
+                }
+
+                channel.push({ type: "done" });
+            } catch (error) {
+                if (signal.aborted) {
+                    channel.push({ type: "cancelled", content: "Cancelled" });
+                    return;
+                }
+
+                if (error === undefined || error === null) {
+                    channel.push({ type: "error", content: "Unknown error occurred" });
+                    return;
+                }
+
+                if (
+                    error instanceof Error &&
+                    (error.name === "AbortError" ||
+                        error.message.includes("abort") ||
+                        error.message.includes("cancel"))
+                ) {
+                    channel.push({ type: "cancelled", content: "Cancelled" });
+                    return;
+                }
+
+                logger.error("Agent", "Stream error", error);
+                channel.push({
+                    type: "error",
+                    content: error instanceof Error ? error.message : "Stream failed",
+                });
+            } finally {
+                unsubscribe();
+                channel.close();
+            }
+        })();
+
+        // Consume from channel and yield
+        try {
+            for await (const chunk of channel) {
+                if (signal.aborted && chunk.type !== "cancelled") {
+                    yield { type: "cancelled", content: "Cancelled" };
+                    break;
+                }
+                yield chunk;
+
+                // Stop on terminal states
+                if (chunk.type === "done" || chunk.type === "error" || chunk.type === "cancelled") {
+                    break;
                 }
             }
-
-            if (toolCalls.length > 0) {
-                for (const tc of toolCalls) {
-                    if (signal.aborted) {
-                        yield { type: "cancelled", content: "Cancelled" };
-                        return;
-                    }
-
-                    yield {
-                        type: "tool-call",
-                        toolCall: {
-                            id: tc.toolCallId,
-                            name: tc.toolName,
-                            arguments: tc.input as Record<string, unknown>,
-                            status: "success",
-                        },
-                    };
-
-                    await new Promise(r => setTimeout(r, 100));
-                }
-            }
-
-            if (text) {
-                const chunkSize = 8;
-                for (let i = 0; i < text.length; i += chunkSize) {
-                    if (signal.aborted) {
-                        yield { type: "cancelled", content: "Cancelled" };
-                        return;
-                    }
-
-                    const chunk = text.slice(i, i + chunkSize);
-                    yield { type: "text", content: chunk };
-                    await new Promise(r => setTimeout(r, 5));
-                }
-            }
-
-            yield { type: "done" };
-        } catch (error) {
-            if (signal.aborted) {
-                yield { type: "cancelled", content: "Cancelled" };
-                return;
-            }
-
-            if (error === undefined || error === null) {
-                yield { type: "error", content: "Unknown error occurred" };
-                return;
-            }
-
-            if (
-                error instanceof Error &&
-                (error.name === "AbortError" ||
-                    error.message.includes("abort") ||
-                    error.message.includes("cancel"))
-            ) {
-                yield { type: "cancelled", content: "Cancelled" };
-                return;
-            }
-
-            logger.error("Agent", "Stream error", error);
-            yield {
-                type: "error",
-                content: error instanceof Error ? error.message : "Stream failed",
-            };
         } finally {
             this.abortController = null;
+            // Ensure the generate promise completes
+            await generatePromise.catch(() => {});
         }
     }
 }

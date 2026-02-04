@@ -18,6 +18,14 @@ class ToolRegistry {
     private tools: Map<string, Tool> = new Map();
     private loaders: LazyToolLoader[] = [];
     private initialized = false;
+    private listeners: Array<(event: { type: "start" | "end"; toolName: string; args: unknown; result?: unknown }) => void> = [];
+
+    onToolEvent(listener: typeof this.listeners[0]){
+        this.listeners.push(listener);
+        return () => {
+            this.listeners = this.listeners.filter(l => l !== listener);
+        };
+    }
 
     register<T extends ZodRawShape>(name: string, config: ToolConfig<T>): void {
         if (this.tools.has(name)) {
@@ -26,11 +34,13 @@ class ToolRegistry {
 
         const wrappedExecute: ToolExecutor<T> = async args => {
             log.debug(`Executing tool: ${name}`, { args });
+            this.listeners.forEach(l => l({ type: "start", toolName: name, args }));
             const start = Date.now();
             try {
                 const result = await config.execute(args);
                 log.info(`Tool ${name} completed in ${Date.now() - start}ms`);
                 log.debug(`Tool ${name} result:`, result);
+                this.listeners.forEach(l => l({ type: "end", toolName: name, args, result }));
                 return result;
             } catch (error) {
                 log.error(`Tool ${name} failed after ${Date.now() - start}ms`, error);

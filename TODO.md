@@ -35,18 +35,18 @@
 ## Phase 2: Background Agent
 
 ### Task Execution
-- [ ] Android Foreground Service (agent stays alive)
-- [ ] Task store (track active/completed tasks)
-- [ ] Progress notifications (real-time updates)
-- [ ] Confirmation gates (approve sensitive actions)
-- [ ] Deep links (tap notification to return)
-- [ ] Task queue (handle multiple requests)
+- [x] Android Foreground Service (agent stays alive)
+- [x] Task store (track active/completed tasks)
+- [x] Progress notifications (real-time updates)
+- [x] Confirmation gates (approve sensitive actions)
+- [x] Deep links (tap notification to return)
+- [x] Task queue (handle multiple requests)
 
 ### Reliability
-- [ ] Retry logic (retry failed tool calls)
-- [ ] Timeout handling (don't hang forever)
-- [ ] Error recovery (recover from crashes)
-- [ ] State persistence (resume after kill)
+- [x] Retry logic (retry failed tool calls)
+- [x] Timeout handling (don't hang forever)
+- [x] Error recovery (recover from crashes)
+- [x] State persistence (resume after kill)
 
 ---
 

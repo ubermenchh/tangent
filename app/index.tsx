@@ -29,25 +29,6 @@ export default function HomeScreen() {
                 </View>
 
                 <View className="flex-row items-center gap-1">
-                    {messages.length > 0 && (
-                        <TouchableOpacity
-                            className="p-2 rounded-full active:bg-tokyo-bg-highlight"
-                            onPress={clearMessages}
-                            accessibilityLabel="New chat"
-                        >
-                            <Plus size={24} color="#7aa2f7" />
-                        </TouchableOpacity>
-                    )}
-                    <TouchableOpacity
-                        className="p-2 rounded-full active:bg-tokyo-bg-highlight"
-                        onPress={() => router.push("/settings")}
-                        accessibilityLabel="Settings"
-                    >
-                        <Settings size={24} color="#c0caf5" />
-                    </TouchableOpacity>
-                </View>
-
-                <View className="flex-row items-center gap-1">
                     {/* Tasks button */}
                     <TouchableOpacity
                         className="p-2 rounded-full active:bg-tokyo-bg-highlight"

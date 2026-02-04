@@ -80,6 +80,8 @@ class BackgroundTaskService {
         setActiveTask(taskId);
         updateTask(taskId, { status: "running", progress: 5 });
 
+        let accumulatedtext = "";
+
         try {
             await BackgroundService.updateNotification({
                 taskDesc: "Processing your request...",
@@ -165,7 +167,22 @@ class BackgroundTaskService {
                         break;
                     }
 
+                    case "tool-call-end": {
+                        const toolName = chunk.toolCall?.name || "unknown";
+                        log.info(`Tool completed: ${toolName}`);
+                        updateTask(taskId, {
+                            currentStep: `Completed: ${toolName}`,
+                            progress: 60,
+                        });
+                        await BackgroundService.updateNotification({
+                            taskDesc: `Completed: ${toolName}`,
+                            progressBar: { max: 100, value: 60 },
+                        });
+                        break;
+                    }
+
                     case "text":
+                        accumulatedtext += chunk.content || "";
                         updateTask(taskId, { progress: 75 });
                         await BackgroundService.updateNotification({
                             taskDesc: "Generating response...",
@@ -178,7 +195,7 @@ class BackgroundTaskService {
                         updateTask(taskId, {
                             status: "completed",
                             progress: 100,
-                            result: "Task completed successfully",
+                            result: accumulatedtext || "Task completed successfully",
                             completedAt: Date.now(),
                             currentStep: undefined,
                         });

@@ -14,7 +14,7 @@ import {
     Inter_600SemiBold,
     Inter_700Bold,
 } from "@expo-google-fonts/inter";
-import { JetBrainsMono_400Regular } from "@expo-google-fonts/jetbrains-mono";
+import { JetBrainsMono_400Regular, JetBrainsMono_500Medium, JetBrainsMono_600SemiBold, JetBrainsMono_700Bold } from "@expo-google-fonts/jetbrains-mono";
 
 try {
     SplashScreen.preventAutoHideAsync();
@@ -25,10 +25,9 @@ try {
 export default function RootLayout() {
     const { loadSettings, isLoaded: settingsLoaded } = useSettingsStore();
     const [fontLoaded] = useFonts({
-        Inter_400Regular,
-        Inter_500Medium,
-        Inter_600SemiBold,
-        Inter_700Bold,
+        JetBrainsMono_500Medium,
+        JetBrainsMono_600SemiBold,
+        JetBrainsMono_700Bold,
         JetBrainsMono_400Regular,
     });
 
