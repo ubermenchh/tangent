@@ -18,9 +18,16 @@ class ToolRegistry {
     private tools: Map<string, Tool> = new Map();
     private loaders: LazyToolLoader[] = [];
     private initialized = false;
-    private listeners: Array<(event: { type: "start" | "end"; toolName: string; args: unknown; result?: unknown }) => void> = [];
+    private listeners: Array<
+        (event: {
+            type: "start" | "end";
+            toolName: string;
+            args: unknown;
+            result?: unknown;
+        }) => void
+    > = [];
 
-    onToolEvent(listener: typeof this.listeners[0]){
+    onToolEvent(listener: (typeof this.listeners)[0]) {
         this.listeners.push(listener);
         return () => {
             this.listeners = this.listeners.filter(l => l !== listener);

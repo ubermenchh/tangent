@@ -166,10 +166,7 @@ export function ToolCallBadge({ toolCall }: { toolCall: ToolCall }) {
                                 showsVerticalScrollIndicator
                                 className="px-3 py-2"
                             >
-                                <Text
-                                    className="text-tokyo-fg-dark text-xs font-mono"
-                                    selectable
-                                >
+                                <Text className="text-tokyo-fg-dark text-xs font-mono" selectable>
                                     {formatValue(toolCall.result, 1000)}
                                 </Text>
                             </ScrollView>

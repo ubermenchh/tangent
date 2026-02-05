@@ -85,12 +85,15 @@ export function ChatInput({ centered = false }: ChatInputProps) {
                     case "tool-call-end": {
                         // Update tool call status and result
                         const currentToolCalls =
-                            useChatStore
-                                .getState()
-                                .messages.find(m => m.id === assistantMsgId)?.toolCalls || [];
+                            useChatStore.getState().messages.find(m => m.id === assistantMsgId)
+                                ?.toolCalls || [];
                         const updatedToolCalls = currentToolCalls.map(tc =>
                             tc.name === chunk.toolCall?.name
-                                ? { ...tc, status: "success" as const, result: chunk.toolCall?.result }
+                                ? {
+                                      ...tc,
+                                      status: "success" as const,
+                                      result: chunk.toolCall?.result,
+                                  }
                                 : tc
                         );
                         updateMessage(assistantMsgId, { toolCalls: updatedToolCalls });

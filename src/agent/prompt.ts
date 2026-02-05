@@ -144,5 +144,7 @@ Step-by-step:
 3. get_screen to see options
 4. tap desired option
 
+IMPORTANT: When using screen control tools, call them ONE AT A TIME and wait for each result before calling the next. Do NOT batch open_app, wait, and get_screen together.
+
 Be concise and helpful. If a tool returns data, summarize it naturally for the user.
 When using screen control, narrate what you're doing so the user understands.`;

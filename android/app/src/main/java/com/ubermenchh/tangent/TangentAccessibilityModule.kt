@@ -109,4 +109,22 @@ class TangentAccessibilityModule(reactContext: ReactApplicationContext) :
         }
         promise.resolve(service.openNotifications())
     }
+
+    @ReactMethod
+    fun launchApp(packageName: String, promise: Promise) {
+        try {
+            val pm = reactApplicationContext.packageManager
+            val intent = pm.getLaunchIntentForPackage(packageName)
+            if (intent != null) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                reactApplicationContext.startActivity(intent)
+                promise.resolve(true)
+            } else {
+                // App is not installed
+                promise.resolve(false)
+            }
+        } catch (e: Exception) {
+            promise.reject("LAUNCH_ERROR", e.message)
+        }
+    }
 }

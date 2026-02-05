@@ -101,7 +101,15 @@ export class Agent {
         userMessage: string,
         conversationHistory: Message[]
     ): AsyncGenerator<{
-        type: "text" | "tool-call" | "tool-call-end" | "thinking" | "reasoning" | "done" | "error" | "cancelled";
+        type:
+            | "text"
+            | "tool-call"
+            | "tool-call-end"
+            | "thinking"
+            | "reasoning"
+            | "done"
+            | "error"
+            | "cancelled";
         content?: string;
         toolCall?: ToolCall;
     }> {
@@ -131,7 +139,15 @@ export class Agent {
 
         // Create channel for real-time streaming
         type StreamChunk = {
-            type: "text" | "tool-call" | "tool-call-end" | "thinking" | "reasoning" | "done" | "error" | "cancelled";
+            type:
+                | "text"
+                | "tool-call"
+                | "tool-call-end"
+                | "thinking"
+                | "reasoning"
+                | "done"
+                | "error"
+                | "cancelled";
             content?: string;
             toolCall?: ToolCall;
         };

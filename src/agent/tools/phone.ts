@@ -1,8 +1,10 @@
 import { z } from "zod";
+import { Platform, NativeModules } from "react-native";
 import { toolRegistry } from "./registry";
 import { logger } from "@/lib/logger";
 
 const log = logger.create("PhoneTools");
+const { TangentAccessibility } = NativeModules;
 
 let Linking: typeof import("expo-linking") | null = null;
 
@@ -13,112 +15,105 @@ async function getLinking() {
     return Linking;
 }
 
-toolRegistry.register("make_phone_call", {
-    description: "Initiate a phone call to a number. Opens the phone dialer.",
-    parameters: z.object({
-        phoneNumber: z.string().describe("The phone number to call"),
-    }),
-    execute: async ({ phoneNumber }) => {
-        log.info(`Initiating call to: ${phoneNumber}`);
-        try {
-            const LinkingModule = await getLinking();
-            const url = `tel:${phoneNumber.replace(/\s/g, "")}`;
-            const canOpen = await LinkingModule.canOpenURL(url);
-            if (!canOpen) {
-                return { success: false, error: "Cannot open phone dialer" };
-            }
-            await LinkingModule.openURL(url);
-            return { success: true, message: `Opening dialer for ${phoneNumber}` };
-        } catch (error) {
-            log.error("Failed to initiate call", error);
-            return { success: false, error: "Failed to open phone dialer" };
-        }
-    },
-});
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const APP_SCHEMES: Record<string, string> = {
+    spotify: "spotify://",
+    youtube: "youtube://",
+    maps: "geo:",
+    settings: "app-settings:",
+    chrome: "googlechrome://",
+    twitter: "twitter://",
+    x: "twitter://",
+    instagram: "instagram://",
+    whatsapp: "whatsapp://",
+};
+
+const APP_PACKAGES: Record<string, string> = {
+    instagram: "com.instagram.android",
+    twitter: "com.twitter.android",
+    x: "com.twitter.android",
+    whatsapp: "com.whatsapp",
+    spotify: "com.spotify.music",
+    youtube: "com.google.android.youtube",
+    chrome: "com.android.chrome",
+    maps: "com.google.android.apps.maps",
+    gmail: "com.google.android.gm",
+    telegram: "org.telegram.messenger",
+    snapchat: "com.snapchat.android",
+    facebook: "com.facebook.katana",
+    tiktok: "com.zhiliaoapp.musically",
+};
 
 toolRegistry.register("open_app", {
-    description: "Open an app using its URL scheme or package name",
+    description: "Open an app and wait for it to appear in foreground",
     parameters: z.object({
-        app: z
-            .string()
-            .describe("App name or URL scheme (e.g., 'spotify', 'youtube', 'maps', 'settings')"),
-        query: z.string().optional().describe("Optional search query or location for maps"),
+        app: z.string().describe("App name, package name, or URL scheme"),
     }),
-    execute: async ({ app, query }) => {
-        log.info(`Opening app: ${app}${query ? ` with query: ${query}` : ""}`);
-
+    execute: async ({ app }) => {
         const LinkingModule = await getLinking();
-
-        const apps: Record<string, { scheme: string; package: string }> = {
-            spotify: {
-                scheme: query ? `spotify://search/${encodeURIComponent(query)}` : "spotify://",
-                package: "com.spotify.music",
-            },
-            youtube: {
-                scheme: query
-                    ? `youtube://results?search_query=${encodeURIComponent(query)}`
-                    : "youtube://",
-                package: "com.google.android.youtube",
-            },
-            twitter: { scheme: "twitter://", package: "com.twitter.android" },
-            x: { scheme: "twitter://", package: "com.twitter.android" },
-            instagram: { scheme: "instagram://", package: "com.instagram.android" },
-            whatsapp: { scheme: "whatsapp://", package: "com.whatsapp" },
-            telegram: { scheme: "tg://", package: "org.telegram.messenger" },
-            chrome: { scheme: "googlechrome://", package: "com.android.chrome" },
-            gmail: { scheme: "googlegmail://", package: "com.google.android.gm" },
-            maps: {
-                scheme: query ? `geo:0,0?q=${encodeURIComponent(query)}` : "geo:",
-                package: "com.google.android.apps.maps",
-            },
-            settings: { scheme: "package:com.android.settings", package: "com.android.settings" },
-            camera: { scheme: "", package: "com.android.camera" },
-            calendar: {
-                scheme: "content://com.android.calendar",
-                package: "com.google.android.calendar",
-            },
-            clock: { scheme: "", package: "com.google.android.deskclock" },
-            calculator: { scheme: "", package: "com.google.android.calculator" },
-            files: { scheme: "", package: "com.google.android.documentsui" },
-            contacts: {
-                scheme: "content://contacts/people",
-                package: "com.google.android.contacts",
-            },
-            phone: { scheme: "tel:", package: "com.google.android.dialer" },
-            messages: { scheme: "sms:", package: "com.google.android.apps.messaging" },
-        };
-
         const appLower = app.toLowerCase();
-        const appConfig = apps[appLower];
 
-        try {
-            if (appConfig?.scheme) {
-                const canOpen = await LinkingModule.canOpenURL(appConfig.scheme);
-                if (canOpen) {
-                    await LinkingModule.openURL(appConfig.scheme);
-                    log.info(`Opened ${app} via scheme`);
-                    return { success: true, message: `Opened ${app}` };
+        const scheme = APP_SCHEMES[appLower];
+        const packageName = APP_PACKAGES[appLower] || app;
+
+        log.info(`Opening app: ${app}`);
+
+        let launched = false;
+
+        // Strategy 1: Native launch by package name (most reliable on Android)
+        if (Platform.OS === "android" && TangentAccessibility?.launchApp && packageName) {
+            try {
+                launched = await TangentAccessibility.launchApp(packageName);
+            } catch {
+                log.warn(`Native launchApp failed for ${packageName}`);
+            }
+        }
+
+        // Strategy 2: URL scheme deep link
+        if (!launched && scheme) {
+            try {
+                await LinkingModule.openURL(scheme);
+                launched = true;
+            } catch {
+                log.warn(`URL scheme failed for ${scheme}`);
+            }
+        }
+
+        // Strategy 3: Play Store (last resort -- app likely not installed)
+        if (!launched) {
+            try {
+                await LinkingModule.openURL(`market://details?id=${packageName}`);
+            } catch {
+                return { success: false, message: `Could not open ${app}` };
+            }
+            return {
+                success: true,
+                message: `Opened store page for ${app} (app may not be installed)`,
+            };
+        }
+
+        // Verify foreground
+        if (Platform.OS === "android" && TangentAccessibility) {
+            for (let i = 0; i < 10; i++) {
+                await sleep(500);
+                try {
+                    const json = await TangentAccessibility.getScreenContent();
+                    const content = JSON.parse(json);
+                    if (
+                        content.packageName?.includes(packageName) ||
+                        content.packageName?.toLowerCase().includes(appLower)
+                    ) {
+                        log.info(`App ${app} is now in foreground`);
+                        return { success: true, message: `Opened ${app}` };
+                    }
+                } catch {
+                    // Continue polling
                 }
             }
-
-            // Fallback to Android package launch
-            const packageName = appConfig?.package || `com.${appLower}`;
-            const marketUrl = `market://launch?id=${packageName}`;
-
-            try {
-                await LinkingModule.openURL(marketUrl);
-                log.info(`Opened ${app} via market launch`);
-                return { success: true, message: `Opened ${app}` };
-            } catch {
-                // Last resort: open in Play Store
-                const playStoreUrl = `https://play.google.com/store/apps/details?id=${packageName}`;
-                await LinkingModule.openURL(playStoreUrl);
-                return { success: true, message: `Opening ${app} in Play Store` };
-            }
-        } catch (error) {
-            log.error(`Failed to open ${app}`, error);
-            return { success: false, error: `Could not open ${app}` };
         }
+
+        return { success: true, message: `Opened ${app} (could not verify foreground)` };
     },
 });
 
