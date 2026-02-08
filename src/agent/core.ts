@@ -30,7 +30,8 @@ export class Agent {
 
     async processMessage(
         userMessage: string,
-        conversationHistory: Message[]
+        conversationHistory: Message[],
+        options?: { maxSteps?: number }
     ): Promise<{ content: string; toolCalls: ToolCall[] }> {
         logger.info("Agent", `Processing message: "${userMessage.slice(0, 100)}..."`);
         logger.debug("Agent", `History length: ${conversationHistory.length}`);
@@ -58,7 +59,7 @@ export class Agent {
                 system: SYSTEM_PROMPT,
                 messages,
                 tools,
-                stopWhen: stepCountIs(5),
+                stopWhen: stepCountIs(options?.maxSteps ?? 5),
             });
 
             const duration = Date.now() - startTime;
@@ -100,7 +101,7 @@ export class Agent {
     async *processMessageStream(
         userMessage: string,
         conversationHistory: Message[],
-        options?: { streaming?: boolean }
+        options?: { streaming?: boolean, maxSteps?: number }
     ): AsyncGenerator<{
         type:
             | "text"
@@ -194,7 +195,7 @@ export class Agent {
                     system: SYSTEM_PROMPT,
                     messages,
                     tools,
-                    stopWhen: stepCountIs(5),
+                    stopWhen: stepCountIs(options?.maxSteps ?? 5),
                     providerOptions: {
                         google: {
                             thinkingConfig: {

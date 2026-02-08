@@ -30,6 +30,18 @@ interface ChatInputProps {
     centered?: boolean;
 }
 
+const SCREEN_CONTROL_KEYWORDS = [
+    "open", "check", "look at", "go to", "navigate", "scroll",
+    "tap", "click", "search in", "send", "play", "show me",
+    "read", "find in", "what's on", "dm", "message",
+];
+
+function estimateMaxSteps(prompt: string): number {
+    const lower = prompt.toLowerCase();
+    const needsScreenControl = SCREEN_CONTROL_KEYWORDS.some(kw => lower.includes(kw));
+    return needsScreenControl ? 15 : 5;
+}
+
 export function ChatInput({ centered = false }: ChatInputProps) {
     const [text, setText] = useState("");
     const [inputHeight, setInputHeight] = useState(48);
@@ -100,7 +112,7 @@ export function ChatInput({ centered = false }: ChatInputProps) {
             const history = useChatStore.getState().messages.slice(0, -1);
             log.debug(`Processing with ${history.length} messages in history`);
 
-            for await (const chunk of agent.processMessageStream(prompt, history)) {
+            for await (const chunk of agent.processMessageStream(prompt, history, { maxSteps: estimateMaxSteps(prompt) })) {
                 switch (chunk.type) {
                     case "thinking":
                         updateMessage(msgId, { status: "thinking" });

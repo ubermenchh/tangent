@@ -93,6 +93,7 @@ class BackgroundTaskService {
 
             for await (const chunk of this.agent!.processMessageStream(prompt, [], {
                 streaming: false,
+                maxSteps: 15,
             })) {
                 if (!BackgroundService.isRunning()) {
                     log.info(`Background service stopped, cancelling task ${taskId}`);
