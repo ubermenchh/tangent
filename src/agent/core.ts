@@ -99,7 +99,8 @@ export class Agent {
 
     async *processMessageStream(
         userMessage: string,
-        conversationHistory: Message[]
+        conversationHistory: Message[],
+        options?: { streaming?: boolean }
     ): AsyncGenerator<{
         type:
             | "text"
@@ -214,29 +215,37 @@ export class Agent {
 
                 // Push reasoning chunks
                 if (reasoningText) {
-                    const chunkSize = 8;
-                    for (let i = 0; i < reasoningText.length; i += chunkSize) {
-                        if (signal.aborted) {
-                            channel.push({ type: "cancelled", content: "Cancelled" });
-                            return;
+                    if (options?.streaming === false) {
+                        channel.push({ type: "reasoning", content: reasoningText });
+                    } else {
+                        const chunkSize = 8;
+                        for (let i = 0; i < reasoningText.length; i += chunkSize) {
+                            if (signal.aborted) {
+                                channel.push({ type: "cancelled", content: "Cancelled" });
+                                return;
+                            }
+                            const chunk = reasoningText.slice(i, i + chunkSize);
+                            channel.push({ type: "reasoning", content: chunk });
+                            await new Promise(r => setTimeout(r, 2));
                         }
-                        const chunk = reasoningText.slice(i, i + chunkSize);
-                        channel.push({ type: "reasoning", content: chunk });
-                        await new Promise(r => setTimeout(r, 2));
                     }
                 }
 
                 // Push text chunks
                 if (text) {
-                    const chunkSize = 8;
-                    for (let i = 0; i < text.length; i += chunkSize) {
-                        if (signal.aborted) {
-                            channel.push({ type: "cancelled", content: "Cancelled" });
-                            return;
+                    if (options?.streaming === false) {
+                        channel.push({ type: "text", content: text });
+                    } else {
+                        const chunkSize = 8;
+                        for (let i = 0; i < text.length; i += chunkSize) {
+                            if (signal.aborted) {
+                                channel.push({ type: "cancelled", content: "Cancelled" });
+                                return;
+                            }
+                            const chunk = text.slice(i, i + chunkSize);
+                            channel.push({ type: "text", content: chunk });
+                            await new Promise(r => setTimeout(r, 5));
                         }
-                        const chunk = text.slice(i, i + chunkSize);
-                        channel.push({ type: "text", content: chunk });
-                        await new Promise(r => setTimeout(r, 5));
                     }
                 }
 

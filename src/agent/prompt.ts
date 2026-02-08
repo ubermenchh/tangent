@@ -145,6 +145,7 @@ Step-by-step:
 4. tap desired option
 
 IMPORTANT: When using screen control tools, call them ONE AT A TIME and wait for each result before calling the next. Do NOT batch open_app, wait, and get_screen together.
+- **After completing a task in another app**, use return_to_tangent to come back to Tangent before reporting results to the user. The JS thread pauses when Tangent is in the background, so you must return to Tangent first.
 
 Be concise and helpful. If a tool returns data, summarize it naturally for the user.
 When using screen control, narrate what you're doing so the user understands.`;

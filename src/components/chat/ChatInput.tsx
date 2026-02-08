@@ -1,5 +1,12 @@
-import { useRef, useState } from "react";
-import { View, TextInput, TouchableOpacity, ActivityIndicator, Keyboard } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+    View,
+    TextInput,
+    TouchableOpacity,
+    Keyboard,
+    AppState,
+    AppStateStatus,
+} from "react-native";
 import { Send, Square } from "lucide-react-native";
 import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -9,8 +16,15 @@ import { logger } from "@/lib/logger";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { backgroundTaskService } from "@/services/backgroundTaskService";
 import { useTaskStore } from "@/stores/taskStore";
+import { isEscalationSuppressed } from "@/lib/appState";
 
 const log = logger.create("ChatInput");
+
+interface ActiveAgent {
+    agent: Agent;
+    prompt: string;
+    msgId: string;
+}
 
 interface ChatInputProps {
     centered?: boolean;
@@ -19,74 +33,98 @@ interface ChatInputProps {
 export function ChatInput({ centered = false }: ChatInputProps) {
     const [text, setText] = useState("");
     const [inputHeight, setInputHeight] = useState(48);
-    const { addMessage, updateMessage, appendToMessage, appendToReasoning, setLoading, isLoading } =
-        useChatStore();
+    const {
+        addMessage,
+        updateMessage,
+        appendToMessage,
+        appendToReasoning,
+        addStream,
+        removeStream,
+        isStreaming,
+    } = useChatStore();
     const { geminiApiKey } = useSettingsStore();
 
-    const agentRef = useRef<Agent | null>(null);
+    const activeAgents = useRef<Map<string, ActiveAgent>>(new Map());
     const inputRef = useRef<TextInput>(null);
 
-    const handleSend = async () => {
-        const trimmed = text.trim();
-        if (!trimmed || isLoading) {
-            log.debug("Send blocked: empty or loading");
-            return;
-        }
+    // Escalate to background when app goes to background
+    useEffect(() => {
+        const handleAppStateChange = (nextState: AppStateStatus) => {
+            if (
+                nextState === "background" &&
+                activeAgents.current.size > 0 &&
+                !isEscalationSuppressed()
+            ) {
+                log.info(
+                    `App backgrounded with ${activeAgents.current.size} active stream(s), escalating`
+                );
 
-        if (!geminiApiKey) {
-            log.warn("Send attempted without API key");
-            addMessage("assistant", "Please set your Gemini API key in settings first.");
-            return;
-        }
+                for (const [msgId, { agent, prompt }] of activeAgents.current) {
+                    agent.cancel();
+                    removeStream(msgId);
 
-        if (!agentRef.current) {
-            log.info("Creating new Agent instance");
-            agentRef.current = new Agent({ apiKey: geminiApiKey });
-        }
+                    // Mark the in-progress chat message as interrupted
+                    const msg = useChatStore.getState().messages.find(m => m.id === msgId);
+                    updateMessage(msgId, {
+                        status: "complete",
+                        content:
+                            (msg?.content || "") +
+                            (msg?.content ? "\n\n" : "") +
+                            "[Moved to background]",
+                    });
 
-        Keyboard.dismiss();
-        log.info(`User message: "${trimmed.slice(0, 50)}..."`);
-        addMessage("user", trimmed);
-        setText("");
-        setInputHeight(48);
-        setLoading(true);
+                    // Create a background task to re-run the prompt
+                    const taskId = useTaskStore.getState().addTask(prompt);
+                    backgroundTaskService.startTask(taskId, prompt).catch(error => {
+                        log.error("Failed to escalate to background", error);
+                        useTaskStore
+                            .getState()
+                            .failTask(
+                                taskId,
+                                error instanceof Error ? error.message : "Escalation failed"
+                            );
+                    });
+                }
 
-        const assistantMsgId = addMessage("assistant", "", { status: "streaming" });
+                activeAgents.current.clear();
+            }
+        };
 
+        const sub = AppState.addEventListener("change", handleAppStateChange);
+        return () => sub.remove();
+    }, [removeStream, updateMessage]);
+
+    const processInForeground = async (agent: Agent, msgId: string, prompt: string) => {
         const startTime = Date.now();
         try {
             const history = useChatStore.getState().messages.slice(0, -1);
             log.debug(`Processing with ${history.length} messages in history`);
 
-            // Use streaming (simulated) for progressive text display
-            for await (const chunk of agentRef.current.processMessageStream(trimmed, history)) {
+            for await (const chunk of agent.processMessageStream(prompt, history)) {
                 switch (chunk.type) {
                     case "thinking":
-                        // Show thinking indicator (optional: update message)
-                        updateMessage(assistantMsgId, { status: "thinking" });
+                        updateMessage(msgId, { status: "thinking" });
                         break;
                     case "reasoning":
-                        appendToReasoning(assistantMsgId, chunk.content || "");
+                        appendToReasoning(msgId, chunk.content || "");
                         break;
                     case "text":
-                        appendToMessage(assistantMsgId, chunk.content || "");
+                        appendToMessage(msgId, chunk.content || "");
                         break;
                     case "tool-call":
-                        updateMessage(assistantMsgId, {
+                        updateMessage(msgId, {
                             status: "streaming",
                             toolCalls: [
-                                ...(useChatStore
-                                    .getState()
-                                    .messages.find(m => m.id === assistantMsgId)?.toolCalls || []),
+                                ...(useChatStore.getState().messages.find(m => m.id === msgId)
+                                    ?.toolCalls || []),
                                 chunk.toolCall!,
                             ],
                         });
                         break;
                     case "tool-call-end": {
-                        // Update tool call status and result
                         const currentToolCalls =
-                            useChatStore.getState().messages.find(m => m.id === assistantMsgId)
-                                ?.toolCalls || [];
+                            useChatStore.getState().messages.find(m => m.id === msgId)?.toolCalls ||
+                            [];
                         const updatedToolCalls = currentToolCalls.map(tc =>
                             tc.name === chunk.toolCall?.name
                                 ? {
@@ -96,22 +134,24 @@ export function ChatInput({ centered = false }: ChatInputProps) {
                                   }
                                 : tc
                         );
-                        updateMessage(assistantMsgId, { toolCalls: updatedToolCalls });
+                        updateMessage(msgId, { toolCalls: updatedToolCalls });
                         break;
                     }
                     case "done":
-                        updateMessage(assistantMsgId, { status: "complete" });
+                        updateMessage(msgId, { status: "complete" });
                         break;
-                    case "cancelled":
-                        updateMessage(assistantMsgId, {
-                            status: "complete",
-                            content:
-                                useChatStore.getState().messages.find(m => m.id === assistantMsgId)
-                                    ?.content + "\n\n[Cancelled]",
-                        });
+                    case "cancelled": {
+                        const msg = useChatStore.getState().messages.find(m => m.id === msgId);
+                        if (msg) {
+                            updateMessage(msgId, {
+                                status: "complete",
+                                content: msg.content + (msg.content ? "\n\n" : "") + "[Cancelled]",
+                            });
+                        }
                         break;
+                    }
                     case "error":
-                        updateMessage(assistantMsgId, {
+                        updateMessage(msgId, {
                             content: `Error: ${chunk.content}`,
                             status: "error",
                         });
@@ -122,55 +162,57 @@ export function ChatInput({ centered = false }: ChatInputProps) {
             log.info(`Response completed in ${Date.now() - startTime}ms`);
         } catch (error) {
             log.error(`Agent error after ${Date.now() - startTime}ms`, error);
-            updateMessage(assistantMsgId, {
+            updateMessage(msgId, {
                 content: `Error: ${error instanceof Error ? error.message : "Something went wrong"}`,
                 status: "error",
             });
-        } finally {
-            setLoading(false);
         }
     };
 
-    const handleSendBackground = async () => {
+    const handleSend = () => {
         const trimmed = text.trim();
-        if (!trimmed || !geminiApiKey) return;
+        if (!trimmed) return;
+
+        if (!geminiApiKey) {
+            log.warn("Send attempted without API key");
+            addMessage("assistant", "Please set your Gemini API key in settings first.");
+            return;
+        }
 
         Keyboard.dismiss();
-        log.info(`Starting background task: "${trimmed.slice(0, 50)}..."`);
-
-        // Add to task store
-        const taskId = useTaskStore.getState().addTask(trimmed);
-
-        // Clear input
+        log.info(`User message: "${trimmed.slice(0, 50)}..."`);
+        addMessage("user", trimmed);
         setText("");
         setInputHeight(48);
 
-        // Start background execution
-        try {
-            await backgroundTaskService.startTask(taskId, trimmed);
-            // Optionally show a toast/alert that task started
-        } catch (error) {
-            log.error("Failed to start background task", error);
-            useTaskStore
-                .getState()
-                .failTask(taskId, error instanceof Error ? error.message : "Failed to start");
-        }
+        const agent = new Agent({ apiKey: geminiApiKey });
+        const msgId = addMessage("assistant", "", { status: "streaming" });
+        addStream(msgId);
+
+        activeAgents.current.set(msgId, { agent, prompt: trimmed, msgId });
+
+        // Fire and forget -- non-blocking
+        processInForeground(agent, msgId, trimmed).finally(() => {
+            removeStream(msgId);
+            activeAgents.current.delete(msgId);
+        });
     };
 
     const handleCancel = () => {
-        log.info("Cancelling current request");
-        agentRef.current?.cancel();
+        log.info("Cancelling all active streams");
+        for (const [msgId, { agent }] of activeAgents.current) {
+            agent.cancel();
+            removeStream(msgId);
 
-        const messages = useChatStore.getState().messages;
-        const streamingMsg = messages.find(m => m.status === "streaming");
-        if (streamingMsg) {
-            updateMessage(streamingMsg.id, {
-                status: "complete",
-                content:
-                    streamingMsg.content + (streamingMsg.content ? "\n\n" : "") + "\n\n[Cancelled]",
-            });
+            const msg = useChatStore.getState().messages.find(m => m.id === msgId);
+            if (msg) {
+                updateMessage(msgId, {
+                    status: "complete",
+                    content: msg.content + (msg.content ? "\n\n" : "") + "[Cancelled]",
+                });
+            }
         }
-        setLoading(false);
+        activeAgents.current.clear();
     };
 
     const handleContentSizeChange = (event: {
@@ -181,6 +223,7 @@ export function ChatInput({ centered = false }: ChatInputProps) {
     };
 
     const hasText = text.trim().length > 0;
+    const hasActiveStreams = isStreaming();
 
     if (centered) {
         return (
@@ -214,7 +257,6 @@ export function ChatInput({ centered = false }: ChatInputProps) {
                         placeholderTextColor="#565f89"
                         onSubmitEditing={handleSend}
                         returnKeyType="send"
-                        editable={!isLoading}
                         multiline
                         onContentSizeChange={handleContentSizeChange}
                     />
@@ -224,14 +266,10 @@ export function ChatInput({ centered = false }: ChatInputProps) {
                             hasText ? "bg-tokyo-blue" : "bg-tokyo-bg-highlight"
                         )}
                         onPress={handleSend}
-                        disabled={!hasText || isLoading}
+                        disabled={!hasText}
                         accessibilityLabel="Send message"
                     >
-                        {isLoading ? (
-                            <ActivityIndicator color={hasText ? "#1a1b26" : "#565f89"} />
-                        ) : (
-                            <Send size={20} color={hasText ? "#1a1b26" : "#565f89"} />
-                        )}
+                        <Send size={20} color={hasText ? "#1a1b26" : "#565f89"} />
                     </TouchableOpacity>
                 </View>
             </Animated.View>
@@ -250,26 +288,28 @@ export function ChatInput({ centered = false }: ChatInputProps) {
                 placeholderTextColor="#565f89"
                 onSubmitEditing={handleSend}
                 returnKeyType="send"
-                editable={!isLoading}
                 multiline
                 onContentSizeChange={handleContentSizeChange}
             />
-            <TouchableOpacity
-                className={cn(
-                    "w-12 h-12 rounded-full items-center justify-center",
-                    isLoading ? "bg-red-600" : text.trim() ? "bg-blue-600" : "bg-zinc-800"
-                )}
-                onPress={isLoading ? handleCancel : handleSend}
-                onLongPress={handleSendBackground}
-                delayLongPress={500}
-                disabled={!isLoading && !text.trim()}
-            >
-                {isLoading ? (
-                    <Square size={16} color="white" fill="white" /> // Stop icon
-                ) : (
-                    <Send size={20} color={text.trim() ? "white" : "#71717a"} />
-                )}
-            </TouchableOpacity>
+            {hasActiveStreams ? (
+                <TouchableOpacity
+                    className="w-12 h-12 rounded-full items-center justify-center bg-red-600"
+                    onPress={handleCancel}
+                >
+                    <Square size={16} color="white" fill="white" />
+                </TouchableOpacity>
+            ) : (
+                <TouchableOpacity
+                    className={cn(
+                        "w-12 h-12 rounded-full items-center justify-center",
+                        hasText ? "bg-blue-600" : "bg-zinc-800"
+                    )}
+                    onPress={handleSend}
+                    disabled={!hasText}
+                >
+                    <Send size={20} color={hasText ? "white" : "#71717a"} />
+                </TouchableOpacity>
+            )}
         </View>
     );
 }

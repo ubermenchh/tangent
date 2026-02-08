@@ -1,4 +1,5 @@
 import BackgroundService from "react-native-background-actions";
+import { useChatStore } from "@/stores/chatStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { Agent } from "@/agent";
@@ -90,7 +91,9 @@ class BackgroundTaskService {
 
             log.info(`Executing task: ${taskId}`);
 
-            for await (const chunk of this.agent!.processMessageStream(prompt, [])) {
+            for await (const chunk of this.agent!.processMessageStream(prompt, [], {
+                streaming: false,
+            })) {
                 if (!BackgroundService.isRunning()) {
                     log.info(`Background service stopped, cancelling task ${taskId}`);
                     updateTask(taskId, { status: "cancelled" });
@@ -183,22 +186,23 @@ class BackgroundTaskService {
 
                     case "text":
                         accumulatedtext += chunk.content || "";
-                        updateTask(taskId, { progress: 75 });
-                        await BackgroundService.updateNotification({
-                            taskDesc: "Generating response...",
-                            progressBar: { max: 100, value: 75 },
-                        });
                         break;
 
-                    case "done":
+                    case "done": {
                         log.info(`Task ${taskId} completed successfully`);
+                        const resultText = accumulatedtext || "Task completed successfully";
+
                         updateTask(taskId, {
                             status: "completed",
                             progress: 100,
-                            result: accumulatedtext || "Task completed successfully",
+                            result: resultText,
                             completedAt: Date.now(),
                             currentStep: undefined,
                         });
+
+                        const { addMessage } = useChatStore.getState();
+                        addMessage("user", prompt);
+                        addMessage("assistant", resultText);
 
                         await BackgroundService.updateNotification({
                             taskTitle: "Task Complete",
@@ -206,6 +210,7 @@ class BackgroundTaskService {
                             progressBar: { max: 100, value: 100 },
                         });
                         break;
+                    }
 
                     case "error":
                         log.error(`Task ${taskId} error: ${chunk.content}`);

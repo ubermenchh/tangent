@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Platform, NativeModules } from "react-native";
 import { toolRegistry } from "./registry";
 import { logger } from "@/lib/logger";
+import { suppressBackgroundEscalation } from "@/lib/appState";
 
 const log = logger.create("PhoneTools");
 const { TangentAccessibility } = NativeModules;
@@ -64,7 +65,12 @@ toolRegistry.register("open_app", {
         // Strategy 1: Native launch by package name (most reliable on Android)
         if (Platform.OS === "android" && TangentAccessibility?.launchApp && packageName) {
             try {
+                suppressBackgroundEscalation(30000);
                 launched = await TangentAccessibility.launchApp(packageName);
+                if (launched) {
+                    log.info(`App ${app} launched via native intent`);
+                    return { success: true, message: `Opened ${app}` };
+                }
             } catch {
                 log.warn(`Native launchApp failed for ${packageName}`);
             }
@@ -204,6 +210,35 @@ toolRegistry.register("search_youtube", {
                 `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`
             );
             return { success: true, message: `Searching YouTube for "${query}" in browser` };
+        }
+    },
+});
+
+toolRegistry.register("return_to_tangent", {
+    description:
+        "Return to the Tangent app from any other app. Use this after finishing a task in another app to come back and report results.",
+    parameters: z.object({}),
+    execute: async () => {
+        log.info("Returning to Tangent");
+
+        if (Platform.OS === "android" && TangentAccessibility?.launchApp) {
+            try {
+                const launched = await TangentAccessibility.launchApp("com.ubermenchh.tangent");
+                if (launched) {
+                    return { success: true, message: "Returned to Tangent" };
+                }
+            } catch {
+                log.warn("Failed to return to Tangent via native launch");
+            }
+        }
+
+        // Fallback: use deep link
+        try {
+            const LinkingModule = await getLinking();
+            await LinkingModule.openURL("tangent://");
+            return { success: true, message: "Returned to Tangent" };
+        } catch {
+            return { success: false, message: "Could not return to Tangent" };
         }
     },
 });

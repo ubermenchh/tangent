@@ -6,19 +6,21 @@ const log = logger.create("ChatStore");
 
 interface ChatState {
     messages: Message[];
-    isLoading: boolean;
+    activeStreams: Set<string>;
 
     addMessage: (role: Message["role"], content: string, options?: Partial<Message>) => string;
     updateMessage: (id: string, updates: Partial<Message>) => void;
     appendToMessage: (id: string, text: string) => void;
     appendToReasoning: (id: string, text: string) => void;
     clearMessages: () => void;
-    setLoading: (loading: boolean) => void;
+    addStream: (msgId: string) => void;
+    removeStream: (msgId: string) => void;
+    isStreaming: () => boolean;
 }
 
-export const useChatStore = create<ChatState>(set => ({
+export const useChatStore = create<ChatState>((set, get) => ({
     messages: [],
-    isLoading: false,
+    activeStreams: new Set(),
 
     addMessage: (role, content, options = {}) => {
         const newMessage: Message = {
@@ -64,8 +66,23 @@ export const useChatStore = create<ChatState>(set => ({
         set({ messages: [] });
     },
 
-    setLoading: loading => {
-        log.debug(`Loading state: ${loading}`);
-        set({ isLoading: loading });
+    addStream: (msgId: string) => {
+        log.debug(`Adding active streams: ${msgId}`);
+        set(state => {
+            const next = new Set(state.activeStreams);
+            next.add(msgId);
+            return { activeStreams: next };
+        });
     },
+
+    removeStream: (msgId: string) => {
+        log.debug(`Removing active streams: ${msgId}`);
+        set(state => {
+            const next = new Set(state.activeStreams);
+            next.delete(msgId);
+            return { activeStreams: next };
+        });
+    },
+
+    isStreaming: () => get().activeStreams.size > 0,
 }));
