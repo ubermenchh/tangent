@@ -42,6 +42,19 @@ function estimateMaxSteps(prompt: string): number {
     return needsScreenControl ? 15 : 5;
 }
 
+const BACKGROUND_KEYWORDS = [
+    "open", "go to", "navigate", "launch",
+    "check my", "look at", "show me",
+    "instagram", "twitter", "whatsapp", "spotify",
+    "youtube", "chrome", "telegram", "snapchat",
+    "tiktok", "facebook", "gmail",
+];
+
+function needsBackgroundExecution(prompt: string): boolean {
+    const lower = prompt.toLowerCase();
+    return BACKGROUND_KEYWORDS.some(kw => lower.includes(kw));
+}
+
 export function ChatInput({ centered = false }: ChatInputProps) {
     const [text, setText] = useState("");
     const [inputHeight, setInputHeight] = useState(48);
@@ -197,17 +210,30 @@ export function ChatInput({ centered = false }: ChatInputProps) {
         setText("");
         setInputHeight(48);
 
-        const agent = new Agent({ apiKey: geminiApiKey });
-        const msgId = addMessage("assistant", "", { status: "streaming" });
-        addStream(msgId);
+        if (needsBackgroundExecution(trimmed)) {
+            // Screen control tasks must run as background tasks
+            // to keep JS thread alive when other apps are in foreground
+            log.info("Screen control task detected, starting as background task");
+            const taskId = useTaskStore.getState().addTask(trimmed);
+            backgroundTaskService.startTask(taskId, trimmed).catch(error => {
+                log.error("Failed to start background task", error);
+                useTaskStore
+                    .getState()
+                    .failTask(taskId, error instanceof Error ? error.message : "Failed to start");
+            });
+        } else {
+            // Simple tasks run in foreground with streaming UI
+            const agent = new Agent({ apiKey: geminiApiKey });
+            const msgId = addMessage("assistant", "", { status: "streaming" });
+            addStream(msgId);
 
-        activeAgents.current.set(msgId, { agent, prompt: trimmed, msgId });
+            activeAgents.current.set(msgId, { agent, prompt: trimmed, msgId });
 
-        // Fire and forget -- non-blocking
-        processInForeground(agent, msgId, trimmed).finally(() => {
-            removeStream(msgId);
-            activeAgents.current.delete(msgId);
-        });
+            processInForeground(agent, msgId, trimmed).finally(() => {
+                removeStream(msgId);
+                activeAgents.current.delete(msgId);
+            });
+        }
     };
 
     const handleCancel = () => {

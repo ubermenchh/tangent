@@ -148,21 +148,37 @@ class TangentAccessibilityService : AccessibilityService() {
     }
 
     fun scroll(direction: String): Boolean {
-        val root = rootInActiveWindow ?: return false
-        return try {
-            val scrollable = findScrollable(root)
-            val action = if (direction == "down" || direction == "forward") 
-                AccessibilityNodeInfo.ACTION_SCROLL_FORWARD 
-            else 
-                AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD
-            val result = scrollable?.performAction(action) ?: false
-            scrollable?.recycle()
-            root.recycle()
-            result
-        } catch (e: Exception) {
-            root.recycle()
-            false
+        val displayMetrics = resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
+    
+        val centerX = screenWidth / 2f
+    
+        val startY: Float
+        val endY: Float
+    
+        when (direction) {
+            "down", "forward" -> {
+                startY = screenHeight * 0.7f
+                endY = screenHeight * 0.3f
+            }
+            "up", "backward" -> {
+                startY = screenHeight * 0.3f
+                endY = screenHeight * 0.7f
+            }
+            else -> return false
         }
+    
+        val path = Path().apply {
+            moveTo(centerX, startY)
+            lineTo(centerX, endY)
+        }
+    
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, 300))
+            .build()
+    
+        return dispatchGesture(gesture, null, null)
     }
 
     fun pressBack(): Boolean = performGlobalAction(GLOBAL_ACTION_BACK)
