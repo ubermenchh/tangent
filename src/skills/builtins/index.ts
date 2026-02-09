@@ -1,5 +1,10 @@
-export { socialMediaSkill } from "./social";
-export { shoppingSkill } from "./shopping";
+export { whatsappSkill } from "./whatsapp";
+export { twitterSkill } from "./twitter";
+export { instagramSkill } from "./instagram";
+export { facebookSkill } from "./facebook";
+export { amazonSkill } from "./amazon";
+export { zomatoSkill } from "./zomato";
+export { blinkitSkill } from "./blinkit";
 export { productivitySkill } from "./productivity";
 export { navigationSkill } from "./navigation";
 export { entertainmentSkill } from "./entertainment";
