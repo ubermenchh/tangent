@@ -20,7 +20,11 @@
 - [x] Accessibility service (screen control)
 - [x] Basic app launching with intents
 - [x] Fix re-execution bug (prompt improvement)
-- [ ] Add intent launching tool (native module)
+- [x] Add intent launching tool (native module) -- `launchApp` in TangentAccessibilityModule.kt
+- [x] Gesture-based scroll (replaced ACTION_SCROLL_FORWARD with dispatchGesture swipe)
+- [x] Refined system prompt (strict sequential tool calling rules)
+- [x] Configurable maxSteps (estimateMaxSteps based on prompt keywords)
+- [x] return_to_tangent tool (agent returns to Tangent after controlling another app)
 - [ ] Improve error handling (graceful failures)
 
 ### UX Polish
@@ -42,11 +46,26 @@
 - [x] Deep links (tap notification to return)
 - [x] Task queue (handle multiple requests)
 
+### Background Routing & Escalation
+- [x] Auto-route screen control tasks to background (needsBackgroundExecution)
+- [x] AppState escalation (foreground tasks auto-escalate when app backgrounded)
+- [x] Escalation suppression (prevent premature escalation during open_app)
+
 ### Reliability
 - [x] Retry logic (retry failed tool calls)
 - [x] Timeout handling (don't hang forever)
 - [x] Error recovery (recover from crashes)
 - [x] State persistence (resume after kill)
+
+---
+
+## Known Bugs
+
+- [ ] **Duplicate user message** -- backgroundTaskService.ts adds `addMessage("user", prompt)` on completion even though ChatInput.tsx already added it at send time, causing the user message to appear twice in chat
+- [ ] **Scroll gesture timing** -- `dispatchGesture` returns before the gesture animation completes (300ms); `get_screen` reads stale screen state because it fires before the scroll finishes. Need GestureResultCallback or a built-in delay after dispatch
+- [ ] **No streaming for background tasks** -- Background execution path shows no chat progress (no streaming assistant message), only task panel updates. Result appears all at once when task completes
+- [ ] **return_to_tangent called in background tasks** -- Background tasks don't need to return to Tangent (JS thread is already alive via foreground service), wastes a step
+- [ ] **get_screen element cap of 50** -- Elements capped at 50 in accessibility.ts, may cut off actual content in element-heavy apps like Twitter (which returns 88+ elements). Filtering could be smarter (prioritize text content over generic ViewGroup/FrameLayout entries)
 
 ---
 
@@ -236,11 +255,12 @@
 
 ## Priority Matrix
 
-| Phase | Effort | Impact | Do When |
-|-------|--------|--------|---------|
-| 1. Foundation | Low | High | Now |
-| 2. Background Agent | Medium | High | Next |
-| 3. Skills | Medium | High | Soon |
+| Phase | Effort | Impact | Status |
+|-------|--------|--------|--------|
+| 1. Foundation | Low | High | ~90% done (clear chat + persistence remaining) |
+| 2. Background Agent | Medium | High | Done (bugs to fix) |
+| Bugs | Low | High | Fix now (scroll timing, duplicate msg, streaming) |
+| 3. Skills | Medium | High | Next |
 | 4. Hooks | High | High | After Skills |
 | 5. Voice | Medium | Medium | Nice to have |
 | 6. Intelligence | High | High | Long-term |

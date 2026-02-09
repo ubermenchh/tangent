@@ -1,4 +1,4 @@
-import { generateText, ModelMessage as AIMessage, stepCountIs } from "ai";
+import { generateText, ModelMessage as AIMessage, stepCountIs, Tool } from "ai";
 import { createModel } from "@/lib/llm";
 import { toolRegistry } from "./tools";
 import { Message, ToolCall } from "../types/message";
@@ -9,16 +9,25 @@ import { createAsyncChannel } from "@/lib/asyncChannel";
 interface AgentConfig {
     apiKey: string;
     model?: string;
+    tools?: Record<string, Tool>;
+    systemPrompt?: string;
+    maxSteps?: number;
 }
 
 export class Agent {
     private apiKey: string;
     private modelId: string;
+    private scopedTools: Record<string, Tool> | null;
+    private scopedPrompt: string;
+    private defaultMaxSteps: number;
     private abortController: AbortController | null = null;
 
     constructor(config: AgentConfig) {
         this.apiKey = config.apiKey;
         this.modelId = config.model ?? "gemini-3-pro-preview";
+        this.scopedTools = config.tools ?? null;
+        this.scopedPrompt = config.systemPrompt ?? SYSTEM_PROMPT;
+        this.defaultMaxSteps = config.maxSteps ?? 5;
     }
 
     cancel() {
@@ -26,6 +35,11 @@ export class Agent {
             this.abortController.abort();
             this.abortController = null;
         }
+    }
+
+    private async getTools(): Promise<Record<string, Tool>> {
+        if (this.scopedTools) return this.scopedTools;
+        return toolRegistry.getTools();
     }
 
     async processMessage(
@@ -47,7 +61,7 @@ export class Agent {
         });
 
         const model = createModel(this.apiKey, this.modelId);
-        const tools = await toolRegistry.getTools();
+        const tools = await this.getTools();
 
         logger.debug("Agent", `Available tools: ${Object.keys(tools).join(", ")}`);
 
@@ -56,10 +70,10 @@ export class Agent {
 
             const { text, toolCalls, steps } = await generateText({
                 model,
-                system: SYSTEM_PROMPT,
+                system: this.scopedPrompt,
                 messages,
                 tools,
-                stopWhen: stepCountIs(options?.maxSteps ?? 5),
+                stopWhen: stepCountIs(options?.maxSteps ?? this.defaultMaxSteps),
             });
 
             const duration = Date.now() - startTime;
@@ -101,7 +115,7 @@ export class Agent {
     async *processMessageStream(
         userMessage: string,
         conversationHistory: Message[],
-        options?: { streaming?: boolean, maxSteps?: number }
+        options?: { streaming?: boolean; maxSteps?: number }
     ): AsyncGenerator<{
         type:
             | "text"
@@ -132,14 +146,13 @@ export class Agent {
         messages.push({ role: "user", content: userMessage });
 
         const model = createModel(this.apiKey, this.modelId);
-        const tools = await toolRegistry.getTools();
+        const tools = await this.getTools();
 
         if (signal.aborted) {
             yield { type: "cancelled", content: "Cancelled" };
             return;
         }
 
-        // Create channel for real-time streaming
         type StreamChunk = {
             type:
                 | "text"
@@ -155,10 +168,8 @@ export class Agent {
         };
         const channel = createAsyncChannel<StreamChunk>();
 
-        // Track running tool calls by name to update status
         const runningTools = new Map<string, ToolCall>();
 
-        // Subscribe to tool events for real-time updates
         const unsubscribe = toolRegistry.onToolEvent(event => {
             if (signal.aborted) return;
 
@@ -176,7 +187,7 @@ export class Agent {
                 const toolCall = runningTools.get(event.toolName);
                 if (toolCall) {
                     toolCall.status = "success";
-                    toolCall.result = event.result; // Include the result
+                    toolCall.result = event.result;
                     logger.debug("Agent", `Tool completed: ${event.toolName}`);
                     channel.push({ type: "tool-call-end", toolCall });
                     runningTools.delete(event.toolName);
@@ -184,7 +195,6 @@ export class Agent {
             }
         });
 
-        // Run generateText in background and push results to channel
         const generatePromise = (async () => {
             try {
                 logger.info("Agent", `Processing: "${userMessage.slice(0, 50)}..."`);
@@ -192,10 +202,10 @@ export class Agent {
 
                 const { text, steps, reasoningText } = await generateText({
                     model,
-                    system: SYSTEM_PROMPT,
+                    system: this.scopedPrompt,
                     messages,
                     tools,
-                    stopWhen: stepCountIs(options?.maxSteps ?? 5),
+                    stopWhen: stepCountIs(options?.maxSteps ?? this.defaultMaxSteps),
                     providerOptions: {
                         google: {
                             thinkingConfig: {
@@ -214,7 +224,6 @@ export class Agent {
                     return;
                 }
 
-                // Push reasoning chunks
                 if (reasoningText) {
                     if (options?.streaming === false) {
                         channel.push({ type: "reasoning", content: reasoningText });
@@ -232,7 +241,6 @@ export class Agent {
                     }
                 }
 
-                // Push text chunks
                 if (text) {
                     if (options?.streaming === false) {
                         channel.push({ type: "text", content: text });
@@ -283,7 +291,6 @@ export class Agent {
             }
         })();
 
-        // Consume from channel and yield
         try {
             for await (const chunk of channel) {
                 if (signal.aborted && chunk.type !== "cancelled") {
@@ -292,14 +299,12 @@ export class Agent {
                 }
                 yield chunk;
 
-                // Stop on terminal states
                 if (chunk.type === "done" || chunk.type === "error" || chunk.type === "cancelled") {
                     break;
                 }
             }
         } finally {
             this.abortController = null;
-            // Ensure the generate promise completes
             await generatePromise.catch(() => {});
         }
     }

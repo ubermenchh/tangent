@@ -17,6 +17,7 @@ import Animated, { FadeIn } from "react-native-reanimated";
 import { backgroundTaskService } from "@/services/backgroundTaskService";
 import { useTaskStore } from "@/stores/taskStore";
 import { isEscalationSuppressed } from "@/lib/appState";
+import { initializeSkills, skillRegistry } from "@/skills";
 
 const log = logger.create("ChatInput");
 
@@ -30,29 +31,25 @@ interface ChatInputProps {
     centered?: boolean;
 }
 
-const SCREEN_CONTROL_KEYWORDS = [
-    "open", "check", "look at", "go to", "navigate", "scroll",
-    "tap", "click", "search in", "send", "play", "show me",
-    "read", "find in", "what's on", "dm", "message",
-];
-
-function estimateMaxSteps(prompt: string): number {
-    const lower = prompt.toLowerCase();
-    const needsScreenControl = SCREEN_CONTROL_KEYWORDS.some(kw => lower.includes(kw));
-    return needsScreenControl ? 15 : 5;
+interface PromptRoute {
+    background: boolean;
+    maxSteps: number;
+    skills: import("@/skills/types").Skill[];
 }
 
-const BACKGROUND_KEYWORDS = [
-    "open", "go to", "navigate", "launch",
-    "check my", "look at", "show me",
-    "instagram", "twitter", "whatsapp", "spotify",
-    "youtube", "chrome", "telegram", "snapchat",
-    "tiktok", "facebook", "gmail",
-];
+function routePrompt(prompt: string): PromptRoute {
+    initializeSkills();
+    const matches = skillRegistry.matchSkills(prompt);
 
-function needsBackgroundExecution(prompt: string): boolean {
-    const lower = prompt.toLowerCase();
-    return BACKGROUND_KEYWORDS.some(kw => lower.includes(kw));
+    if (matches.length === 0) {
+        return { background: false, maxSteps: 5, skills: [] };
+    }
+
+    const topSkills = matches.slice(0, 3).map(m => m.skill);
+    const background = topSkills.some(s => s.needsBackground);
+    const maxSteps = Math.max(...topSkills.map(s => s.maxSteps ?? 5));
+
+    return { background, maxSteps, skills: topSkills };
 }
 
 export function ChatInput({ centered = false }: ChatInputProps) {
@@ -119,13 +116,18 @@ export function ChatInput({ centered = false }: ChatInputProps) {
         return () => sub.remove();
     }, [removeStream, updateMessage]);
 
-    const processInForeground = async (agent: Agent, msgId: string, prompt: string) => {
+    const processInForeground = async (
+        agent: Agent,
+        msgId: string,
+        prompt: string,
+        maxSteps: number
+    ) => {
         const startTime = Date.now();
         try {
             const history = useChatStore.getState().messages.slice(0, -1);
             log.debug(`Processing with ${history.length} messages in history`);
 
-            for await (const chunk of agent.processMessageStream(prompt, history, { maxSteps: estimateMaxSteps(prompt) })) {
+            for await (const chunk of agent.processMessageStream(prompt, history, { maxSteps })) {
                 switch (chunk.type) {
                     case "thinking":
                         updateMessage(msgId, { status: "thinking" });
@@ -194,7 +196,7 @@ export function ChatInput({ centered = false }: ChatInputProps) {
         }
     };
 
-    const handleSend = () => {
+    const handleSend = async () => {
         const trimmed = text.trim();
         if (!trimmed) return;
 
@@ -210,10 +212,11 @@ export function ChatInput({ centered = false }: ChatInputProps) {
         setText("");
         setInputHeight(48);
 
-        if (needsBackgroundExecution(trimmed)) {
-            // Screen control tasks must run as background tasks
-            // to keep JS thread alive when other apps are in foreground
-            log.info("Screen control task detected, starting as background task");
+        const route = routePrompt(trimmed);
+
+        if (route.background) {
+            // Skills flagged this for background execution (screen control, etc.)
+            log.info(`Background routed by skills: ${route.skills.map(s => s.id).join(", ")}`);
             const taskId = useTaskStore.getState().addTask(trimmed);
             backgroundTaskService.startTask(taskId, trimmed).catch(error => {
                 log.error("Failed to start background task", error);
@@ -222,14 +225,28 @@ export function ChatInput({ centered = false }: ChatInputProps) {
                     .failTask(taskId, error instanceof Error ? error.message : "Failed to start");
             });
         } else {
-            // Simple tasks run in foreground with streaming UI
-            const agent = new Agent({ apiKey: geminiApiKey });
+            // Foreground with streaming -- use skill-scoped Agent if skills matched
+            let agent: Agent;
+            if (route.skills.length > 0) {
+                const composedConfig = await skillRegistry.composeConfig(route.skills);
+                const tools = await skillRegistry.resolveTools(composedConfig.toolNames);
+                agent = new Agent({
+                    apiKey: geminiApiKey,
+                    tools,
+                    systemPrompt: composedConfig.systemPrompt,
+                    maxSteps: composedConfig.maxSteps,
+                });
+                log.info(`Skill-scoped agent: ${route.skills.map(s => s.id).join(", ")}`);
+            } else {
+                agent = new Agent({ apiKey: geminiApiKey });
+            }
+
             const msgId = addMessage("assistant", "", { status: "streaming" });
             addStream(msgId);
 
             activeAgents.current.set(msgId, { agent, prompt: trimmed, msgId });
 
-            processInForeground(agent, msgId, trimmed).finally(() => {
+            processInForeground(agent, msgId, trimmed, route.maxSteps).finally(() => {
                 removeStream(msgId);
                 activeAgents.current.delete(msgId);
             });
