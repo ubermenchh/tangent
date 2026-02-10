@@ -200,4 +200,168 @@ describe("AgentOrchestrator", () => {
         resolvePending({ content: "done", toolCalls: [] });
         await runPromise;
     });
+
+    test("runParallel executes accessibility subtasks after parallel subtasks", async () => {
+        const regular = makeSkill("regular", { needsAccessibility: false });
+        const accessibility = makeSkill("accessibility", { needsAccessibility: true });
+    
+        mockSkillRegistry.buildScopedConfig.mockResolvedValue({
+            config: baseScopedConfig,
+            tools: {},
+            matchedSkills: [regular, accessibility],
+        });
+    
+        mockGenerateText
+            // planner
+            .mockResolvedValueOnce({
+                text: JSON.stringify([
+                    { description: "Regular task", skillIds: ["regular"] },
+                    { description: "Accessibility task", skillIds: ["accessibility"] },
+                ]),
+            })
+            // synthesizer
+            .mockResolvedValueOnce({
+                text: "merged response",
+            });
+    
+        mockProcessMessage
+            .mockResolvedValueOnce({ content: "regular done", toolCalls: [] })
+            .mockResolvedValueOnce({ content: "access done", toolCalls: [] });
+    
+        const orchestrator = new AgentOrchestrator({ apiKey: "k-parallel" });
+        const result = await orchestrator.execute("do both", []);
+    
+        expect(result.parallel).toBe(true);
+        expect(result.subResults).toHaveLength(2);
+        expect(result.subResults[0].skillIds).toEqual(["regular"]);
+        expect(result.subResults[1].skillIds).toEqual(["accessibility"]);
+    });
+    
+    test("executeSubtask returns failed result when composeConfig throws", async () => {
+        const broken = makeSkill("broken");
+        mockSkillRegistry.composeConfig.mockRejectedValueOnce(new Error("compose failed"));
+    
+        const orchestrator = new AgentOrchestrator({ apiKey: "k-subtask" });
+    
+        const out = await (
+            orchestrator as unknown as {
+                executeSubtask: (subtask: unknown, conversationHistory: unknown[]) => Promise<{
+                    status: string;
+                    error?: string;
+                    skillIds: string[];
+                }>;
+            }
+        ).executeSubtask(
+            {
+                id: "subtask_0",
+                description: "broken task",
+                prompt: "broken task",
+                skills: [broken],
+            },
+            []
+        );
+    
+        expect(out.status).toBe("failed");
+        expect(out.error).toBe("compose failed");
+        expect(out.skillIds).toEqual(["broken"]);
+    });
+    
+    test("synthesize returns direct content for exactly one completed result", async () => {
+        const orchestrator = new AgentOrchestrator({ apiKey: "k-synth-1" });
+    
+        const synthesize = (orchestrator as unknown as {
+            synthesize: (results: Array<Record<string, unknown>>, originalPrompt: string) => Promise<string>;
+        }).synthesize.bind(orchestrator);
+    
+        const out = await synthesize(
+            [
+                {
+                    subtaskId: "s1",
+                    skillIds: ["one"],
+                    content: "single complete answer",
+                    toolCalls: [],
+                    status: "completed",
+                    durationMs: 1,
+                },
+            ],
+            "prompt"
+        );
+    
+        expect(out).toBe("single complete answer");
+        expect(mockGenerateText).not.toHaveBeenCalled();
+    });
+    
+    test("synthesize returns failure summary when no subtask completed", async () => {
+        const orchestrator = new AgentOrchestrator({ apiKey: "k-synth-2" });
+    
+        const synthesize = (orchestrator as unknown as {
+            synthesize: (results: Array<Record<string, unknown>>, originalPrompt: string) => Promise<string>;
+        }).synthesize.bind(orchestrator);
+    
+        const out = await synthesize(
+            [
+                {
+                    subtaskId: "f1",
+                    skillIds: ["a"],
+                    content: "",
+                    toolCalls: [],
+                    status: "failed",
+                    error: "rate limited",
+                    durationMs: 1,
+                },
+                {
+                    subtaskId: "f2",
+                    skillIds: ["b"],
+                    content: "",
+                    toolCalls: [],
+                    status: "failed",
+                    error: undefined,
+                    durationMs: 1,
+                },
+            ],
+            "prompt"
+        );
+    
+        expect(out).toContain("I wasn't able to complete your request.");
+        expect(out).toContain("rate limited");
+    });
+    
+    test("synthesize falls back to completed content when LLM synthesis fails", async () => {
+        mockGenerateText.mockRejectedValueOnce(new Error("synthesis failed"));
+    
+        const orchestrator = new AgentOrchestrator({ apiKey: "k-synth-3" });
+    
+        const synthesize = (orchestrator as unknown as {
+            synthesize: (results: Array<Record<string, unknown>>, originalPrompt: string) => Promise<string>;
+        }).synthesize.bind(orchestrator);
+    
+        const results = [
+            {
+                subtaskId: "c1",
+                skillIds: ["ok"],
+                content: "completed output",
+                toolCalls: [],
+                status: "completed",
+                durationMs: 1,
+            },
+            {
+                subtaskId: "f1",
+                skillIds: ["fail"],
+                content: "",
+                toolCalls: [],
+                status: "failed",
+                error: "network timeout",
+                durationMs: 1,
+            },
+        ];
+    
+        const out = await synthesize(results, "prompt");
+    
+        expect(mockGenerateText).toHaveBeenCalledWith(
+            expect.objectContaining({
+                prompt: expect.stringContaining("FAILED - network timeout"),
+            })
+        );
+        expect(out).toBe("completed output");
+    });
 });
