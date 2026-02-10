@@ -92,6 +92,10 @@ const { indexStore: mockIndexStore } = jest.requireMock("@/index/store") as {
     };
 };
 
+const { File: MockExpoFile } = jest.requireMock("expo-file-system") as {
+    File: { prototype: { text: () => Promise<string> } };
+};
+
 describe("index manager", () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -241,5 +245,105 @@ describe("index manager", () => {
 
         clearIndex();
         expect(mockIndexStore.clear).toHaveBeenCalledTimes(1);
+    });
+
+    test("buildIndex indexes image files via image description flow", async () => {
+        const scanned = [
+            {
+                path: "file:///docs/photo.jpg",
+                name: "photo.jpg",
+                extension: "jpg",
+                size: 1000,
+                modifiedAt: 10,
+            },
+        ];
+    
+        mockScanFolders.mockResolvedValue(scanned);
+        mockIndexStore.getAll.mockReturnValue([]);
+        mockGenerateText.mockResolvedValueOnce({ text: "A dog running in a park" });
+        mockGenerateEmbeddings.mockResolvedValue([[0.9, 0.1]]);
+    
+        await buildIndex("api-key");
+    
+        expect(mockGenerateText).toHaveBeenCalledWith(
+            expect.objectContaining({
+                messages: [
+                    expect.objectContaining({
+                        content: expect.arrayContaining([
+                            expect.objectContaining({ type: "image" }),
+                            expect.objectContaining({ type: "text" }),
+                        ]),
+                    }),
+                ],
+            })
+        );
+    
+        expect(mockIndexStore.upsert).toHaveBeenCalledTimes(1);
+        expect(mockIndexStore.upsert.mock.calls[0][0]).toMatchObject({
+            path: "file:///docs/photo.jpg",
+            name: "photo.jpg",
+            description: "A dog running in a park",
+        });
+    });
+    
+    test("buildIndex falls back when image description fails", async () => {
+        const scanned = [
+            {
+                path: "file:///docs/fail.png",
+                name: "fail.png",
+                extension: "png",
+                size: 1000,
+                modifiedAt: 10,
+            },
+        ];
+    
+        mockScanFolders.mockResolvedValue(scanned);
+        mockIndexStore.getAll.mockReturnValue([]);
+        mockGenerateText.mockRejectedValueOnce(new Error("vision unavailable"));
+        mockGenerateEmbeddings.mockResolvedValue([[0.3, 0.7]]);
+    
+        await buildIndex("api-key");
+    
+        expect(mockIndexStore.upsert).toHaveBeenCalledTimes(1);
+        expect(mockIndexStore.upsert.mock.calls[0][0].description).toBe("Image file: fail.png");
+    });
+    
+    test("buildIndex continues when text file read fails", async () => {
+        const scanned = [
+            {
+                path: "file:///docs/broken.txt",
+                name: "broken.txt",
+                extension: "txt",
+                size: 100,
+                modifiedAt: 10,
+            },
+        ];
+    
+        mockScanFolders.mockResolvedValue(scanned);
+        mockIndexStore.getAll.mockReturnValue([]);
+        mockGenerateText.mockResolvedValueOnce({ text: "Recovered description" });
+        mockGenerateEmbeddings.mockResolvedValue([[0.2, 0.8]]);
+    
+        const textSpy = jest
+            .spyOn(MockExpoFile.prototype, "text")
+            .mockImplementation(async function (this: { uri: string }) {
+                if (this.uri === "file:///docs/broken.txt") {
+                    throw new Error("read failed");
+                }
+                return mockFileTexts.get(this.uri) ?? "";
+            });
+    
+        try {
+            await buildIndex("api-key");
+        } finally {
+            textSpy.mockRestore();
+        }
+    
+        expect(mockGenerateText).toHaveBeenCalledTimes(1);
+        const firstCall = mockGenerateText.mock.calls[0]?.[0] as { prompt: string };
+        expect(firstCall.prompt).toContain("Filename: broken.txt");
+        expect(firstCall.prompt).not.toContain("\nContent:");
+    
+        expect(mockIndexStore.upsert).toHaveBeenCalledTimes(1);
     });
 });
