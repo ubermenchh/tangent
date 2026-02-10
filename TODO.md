@@ -253,6 +253,35 @@
 
 ---
 
+## Skill Builder (Auto-learn apps)
+
+### Exploration Agent
+- [ ] ScreenSnapshot and AppMap types
+- [ ] Exploration agent with specialized prompt (observe-only, 30-40 steps)
+- [ ] Screen landmark detection (tabs, search bars, FABs, back buttons)
+- [ ] Navigation tree traversal (tap each tab/section, record screens, press_back)
+
+### Skill Generator
+- [ ] LLM-based Skill generation from AppMap
+- [ ] Structured output parsing (promptFragment, keywords, maxSteps, sensitiveActions)
+- [ ] Validation (ensure generated skill matches Skill interface)
+
+### Persistence
+- [ ] MMKV store for custom skills (StoredSkill format)
+- [ ] Load custom skills in initializeSkills()
+- [ ] Delete / update existing custom skills
+
+### Integration
+- [ ] buildSkill() orchestration (explore -> generate -> persist -> register)
+- [ ] learn_app tool or keyword trigger ("learn Paytm", "teach yourself X")
+- [ ] Re-learn flow (re-explore, regenerate, version bump)
+- [ ] Failure tracking (log skill failures, suggest re-learning)
+
+### UI (later)
+- [ ] Custom skills list in settings
+- [ ] View/edit/delete generated skills
+- [ ] "Re-learn" button per skill
+
 ## Priority Matrix
 
 | Phase | Effort | Impact | Status |
