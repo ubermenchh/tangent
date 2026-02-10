@@ -431,4 +431,61 @@ describe("backgroundTaskService", () => {
         expect(ctx.backgroundActions.start).not.toHaveBeenCalled();
         expect(ctx.AgentOrchestrator).not.toHaveBeenCalled();
     });
+
+    test("startTask uses generic error message when background start throws non-Error", async () => {
+        const ctx = setup();
+        ctx.mockGetTask.mockReturnValue(makeTask("task-1", "hello"));
+        ctx.backgroundActions.start.mockRejectedValueOnce("start-failed-non-error");
+    
+        await ctx.backgroundTaskService.startTask("task-1", "hello");
+    
+        expect(ctx.mockUpdateTask).toHaveBeenCalledWith("task-1", {
+            status: "failed",
+            error: "Failed to start background service",
+        });
+    });
+    
+    test("executeTask uses fallback result text when orchestrator returns empty content", async () => {
+        const ctx = setup();
+        ctx.mockGetTask.mockReturnValue(makeTask("task-1", "hello"));
+        ctx.mockExecute.mockResolvedValueOnce({
+            content: "",
+            toolCalls: [],
+            subResults: [],
+            parallel: false,
+        });
+        ctx.backgroundActions.isRunning.mockReturnValue(true);
+        runTaskInStart(ctx.backgroundActions);
+    
+        await ctx.backgroundTaskService.startTask("task-1", "hello");
+    
+        expect(ctx.mockUpdateTask).toHaveBeenCalledWith(
+            "task-1",
+            expect.objectContaining({
+                status: "completed",
+                result: "Task completed successfully",
+            })
+        );
+        expect(ctx.mockAddMessage).toHaveBeenCalledWith("assistant", "Task completed successfully");
+    });
+    
+    test("executeTask reports Error message for failed execution and notification", async () => {
+        const ctx = setup();
+        ctx.mockGetTask.mockReturnValue(makeTask("task-1", "hello"));
+        ctx.mockExecute.mockRejectedValueOnce(new Error("runner exploded"));
+        runTaskInStart(ctx.backgroundActions);
+    
+        await ctx.backgroundTaskService.startTask("task-1", "hello");
+    
+        expect(ctx.mockUpdateTask).toHaveBeenCalledWith("task-1", {
+            status: "failed",
+            error: "runner exploded",
+            currentStep: undefined,
+        });
+    
+        expect(ctx.backgroundActions.updateNotification).toHaveBeenCalledWith({
+            taskTitle: "Task Failed",
+            taskDesc: "runner exploded",
+        });
+    });
 });
