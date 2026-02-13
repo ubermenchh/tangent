@@ -159,9 +159,13 @@ describe("index manager", () => {
             .mockResolvedValueOnce({ text: "desc a" })
             .mockResolvedValueOnce({ text: "desc b" });
 
-        mockGenerateEmbeddings.mockResolvedValue([[0.1, 0.2], [0.3, 0.4]]);
+        mockGenerateEmbeddings.mockResolvedValue([
+            [0.1, 0.2],
+            [0.3, 0.4],
+        ]);
 
-        const progress: Array<{ phase: string; current: number; total: number; file?: string }> = [];
+        const progress: Array<{ phase: string; current: number; total: number; file?: string }> =
+            [];
         await buildIndex("api-key", undefined, p => progress.push(p));
 
         expect(mockCreateModel).toHaveBeenCalled();
@@ -169,7 +173,10 @@ describe("index manager", () => {
         expect(mockGenerateEmbeddings).toHaveBeenCalledTimes(1);
         expect(mockGenerateEmbeddings).toHaveBeenCalledWith(
             "api-key",
-            expect.arrayContaining([expect.stringContaining("a.txt"), expect.stringContaining("b.json")])
+            expect.arrayContaining([
+                expect.stringContaining("a.txt"),
+                expect.stringContaining("b.json"),
+            ])
         );
 
         expect(mockIndexStore.upsert).toHaveBeenCalledTimes(2);
@@ -257,14 +264,14 @@ describe("index manager", () => {
                 modifiedAt: 10,
             },
         ];
-    
+
         mockScanFolders.mockResolvedValue(scanned);
         mockIndexStore.getAll.mockReturnValue([]);
         mockGenerateText.mockResolvedValueOnce({ text: "A dog running in a park" });
         mockGenerateEmbeddings.mockResolvedValue([[0.9, 0.1]]);
-    
+
         await buildIndex("api-key");
-    
+
         expect(mockGenerateText).toHaveBeenCalledWith(
             expect.objectContaining({
                 messages: [
@@ -277,7 +284,7 @@ describe("index manager", () => {
                 ],
             })
         );
-    
+
         expect(mockIndexStore.upsert).toHaveBeenCalledTimes(1);
         expect(mockIndexStore.upsert.mock.calls[0][0]).toMatchObject({
             path: "file:///docs/photo.jpg",
@@ -285,7 +292,7 @@ describe("index manager", () => {
             description: "A dog running in a park",
         });
     });
-    
+
     test("buildIndex falls back when image description fails", async () => {
         const scanned = [
             {
@@ -296,18 +303,18 @@ describe("index manager", () => {
                 modifiedAt: 10,
             },
         ];
-    
+
         mockScanFolders.mockResolvedValue(scanned);
         mockIndexStore.getAll.mockReturnValue([]);
         mockGenerateText.mockRejectedValueOnce(new Error("vision unavailable"));
         mockGenerateEmbeddings.mockResolvedValue([[0.3, 0.7]]);
-    
+
         await buildIndex("api-key");
-    
+
         expect(mockIndexStore.upsert).toHaveBeenCalledTimes(1);
         expect(mockIndexStore.upsert.mock.calls[0][0].description).toBe("Image file: fail.png");
     });
-    
+
     test("buildIndex continues when text file read fails", async () => {
         const scanned = [
             {
@@ -318,12 +325,12 @@ describe("index manager", () => {
                 modifiedAt: 10,
             },
         ];
-    
+
         mockScanFolders.mockResolvedValue(scanned);
         mockIndexStore.getAll.mockReturnValue([]);
         mockGenerateText.mockResolvedValueOnce({ text: "Recovered description" });
         mockGenerateEmbeddings.mockResolvedValue([[0.2, 0.8]]);
-    
+
         const textSpy = jest
             .spyOn(MockExpoFile.prototype, "text")
             .mockImplementation(async function (this: { uri: string }) {
@@ -332,18 +339,18 @@ describe("index manager", () => {
                 }
                 return mockFileTexts.get(this.uri) ?? "";
             });
-    
+
         try {
             await buildIndex("api-key");
         } finally {
             textSpy.mockRestore();
         }
-    
+
         expect(mockGenerateText).toHaveBeenCalledTimes(1);
         const firstCall = mockGenerateText.mock.calls[0]?.[0] as { prompt: string };
         expect(firstCall.prompt).toContain("Filename: broken.txt");
         expect(firstCall.prompt).not.toContain("\nContent:");
-    
+
         expect(mockIndexStore.upsert).toHaveBeenCalledTimes(1);
     });
 });

@@ -239,6 +239,46 @@
 - [ ] Dark/light themes
 - [ ] Customizable chat bubbles
 
+### UI Redesign Plan (Ambient + Voice-first)
+- [ ] Define dual-surface UX model: Ambient surface (idle/listening/generating) + Work surface (chat/tool/task transparency)
+- [ ] Keep trust-critical visibility during redesign (tool status, task state, confirmation gates, errors)
+
+#### Phase 0: Baseline and Guardrails
+- [ ] Capture baseline screenshots for `home`, `tasks`, `settings` before redesign
+- [ ] Fix token/style debt first (`border-tokyo-bg-hightlight`, undefined `text-foreground`, off-palette `bg-red-600/bg-blue-600/bg-zinc-800`)
+- [ ] Freeze non-negotiable behaviors: streaming, cancel, background routing/escalation, deep links, permissions
+
+#### Phase 1: Design System Foundation
+- [ ] Add semantic tokens (`surface`, `text`, `accent`, `state`, `border`) on top of Tokyo palette
+- [ ] Standardize typography scale, spacing scale, radius scale, and motion durations
+- [ ] Create shared UI primitives (ScreenContainer, TopBar, IconButton, SectionCard, StatusChip)
+
+#### Phase 2: Home Screen Redesign
+- [ ] Rebuild `app/index.tsx` around explicit UI modes: `idle`, `typing`, `thinking/streaming`, `conversation`
+- [ ] Refactor `ChatInput` for mode-driven visuals and primary action orb while preserving existing send/cancel/background logic
+- [ ] Keep suggestion chips/empty state but style as ambient hero surface
+
+#### Phase 3: Transcript and Tool Trace UX
+- [ ] Redesign `MessageBubble` + `ToolCallBadge` to compact-by-default, expandable details
+- [ ] Preserve clear status semantics (`running/success/error`) with less visual noise
+- [ ] Keep reasoning collapsed by default with fast reveal
+
+#### Phase 4: Tasks and Settings Re-skin
+- [ ] Apply ambient styling to `tasks` and `settings` without changing behavior contracts
+- [ ] Keep task lifecycle clarity: `queued/running/awaiting_confirmation/completed/failed/cancelled`
+- [ ] Improve settings information architecture (grouped cards, progressive disclosure for advanced options)
+
+#### Phase 5: Performance + Accessibility Hardening
+- [ ] Migrate `MessageList` from `ScrollView` to virtualized list for long-chat performance
+- [ ] Reduce unnecessary store-driven re-renders via selector-based subscriptions
+- [ ] Add reduced-motion fallback and enforce contrast in dark translucent surfaces
+
+#### Phase 6: Testing + Rollout
+- [ ] Keep chat/task/background service tests green while migrating UI
+- [ ] Add integration checks for redesigned home/task/settings flows
+- [ ] Roll out in small PRs: foundation -> home -> transcript/tools -> tasks/settings -> perf pass
+- [ ] Run manual smoke checks after each phase (streaming, cancel, background task, deep link, permission paths)
+
 ### Onboarding
 - [ ] Guided setup wizard
 - [ ] Permission explanations

@@ -17,7 +17,8 @@ jest.mock("expo-router", () => ({
 }));
 
 jest.mock("@/stores/taskStore", () => ({
-    useTaskStore: (selector: (state: typeof mockTaskStoreState) => unknown) => selector(mockTaskStoreState),
+    useTaskStore: (selector: (state: typeof mockTaskStoreState) => unknown) =>
+        selector(mockTaskStoreState),
 }));
 
 jest.mock("@/components/tasks", () => {
@@ -59,11 +60,11 @@ describe("app/tasks", () => {
 
     test("pressing back triggers router.back", () => {
         const { UNSAFE_getByProps } = render(<TasksScreen />);
-        
+
         // Back button Pressable has a unique hitSlop in this screen
         const backButton = UNSAFE_getByProps({ hitSlop: 8 });
         fireEvent.press(backButton);
-        
+
         expect(mockBack).toHaveBeenCalledTimes(1);
     });
 

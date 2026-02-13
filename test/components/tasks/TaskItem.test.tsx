@@ -96,17 +96,21 @@ describe("TaskItem", () => {
     });
 
     test("does not show cancel button for inactive task", () => {
-        const { UNSAFE_queryByProps } = render(<TaskItem task={makeTask({ status: "completed" })} />);
+        const { UNSAFE_queryByProps } = render(
+            <TaskItem task={makeTask({ status: "completed" })} />
+        );
         expect(UNSAFE_queryByProps({ hitSlop: 8 })).toBeNull();
     });
 
     test("renders running progress and current step", () => {
         const { getByText, UNSAFE_getAllByType } = render(
-            <TaskItem task={makeTask({ status: "running", progress: 42, currentStep: "Embedding files" })} />
+            <TaskItem
+                task={makeTask({ status: "running", progress: 42, currentStep: "Embedding files" })}
+            />
         );
-    
+
         expect(getByText("Embedding files")).toBeTruthy();
-    
+
         const { View } = require("react-native");
         const progressFill = UNSAFE_getAllByType(View).find(node => {
             const style = Array.isArray(node.props.style)
@@ -114,7 +118,7 @@ describe("TaskItem", () => {
                 : node.props.style;
             return style?.width === "42%";
         });
-    
+
         expect(progressFill).toBeTruthy();
     });
 

@@ -64,7 +64,10 @@ describe("files tools", () => {
         useSettingsStore.getState.mockReturnValue({ geminiApiKey: null });
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "search_files")({
+        const result = await getExecutor(
+            tools,
+            "search_files"
+        )({
             query: "invoice",
             limit: 5,
         });
@@ -79,7 +82,10 @@ describe("files tools", () => {
         mockGetIndexStats.mockReturnValue({ count: 0, lastUpdated: null });
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "search_files")({
+        const result = await getExecutor(
+            tools,
+            "search_files"
+        )({
             query: "resume",
             limit: 3,
         });
@@ -109,7 +115,10 @@ describe("files tools", () => {
         ]);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "search_files")({
+        const result = await getExecutor(
+            tools,
+            "search_files"
+        )({
             query: "resume",
             limit: 2,
         });
@@ -140,7 +149,10 @@ describe("files tools", () => {
         mockSearchFiles.mockResolvedValue([]);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "search_files")({
+        const result = await getExecutor(
+            tools,
+            "search_files"
+        )({
             query: "does-not-exist",
             limit: 4,
         });
@@ -157,7 +169,10 @@ describe("files tools", () => {
         mockSearchFiles.mockRejectedValueOnce(new Error("embedding failed"));
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "search_files")({
+        const result = await getExecutor(
+            tools,
+            "search_files"
+        )({
             query: "budget",
             limit: 5,
         });

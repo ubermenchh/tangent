@@ -204,13 +204,13 @@ describe("AgentOrchestrator", () => {
     test("runParallel executes accessibility subtasks after parallel subtasks", async () => {
         const regular = makeSkill("regular", { needsAccessibility: false });
         const accessibility = makeSkill("accessibility", { needsAccessibility: true });
-    
+
         mockSkillRegistry.buildScopedConfig.mockResolvedValue({
             config: baseScopedConfig,
             tools: {},
             matchedSkills: [regular, accessibility],
         });
-    
+
         mockGenerateText
             // planner
             .mockResolvedValueOnce({
@@ -223,29 +223,32 @@ describe("AgentOrchestrator", () => {
             .mockResolvedValueOnce({
                 text: "merged response",
             });
-    
+
         mockProcessMessage
             .mockResolvedValueOnce({ content: "regular done", toolCalls: [] })
             .mockResolvedValueOnce({ content: "access done", toolCalls: [] });
-    
+
         const orchestrator = new AgentOrchestrator({ apiKey: "k-parallel" });
         const result = await orchestrator.execute("do both", []);
-    
+
         expect(result.parallel).toBe(true);
         expect(result.subResults).toHaveLength(2);
         expect(result.subResults[0].skillIds).toEqual(["regular"]);
         expect(result.subResults[1].skillIds).toEqual(["accessibility"]);
     });
-    
+
     test("executeSubtask returns failed result when composeConfig throws", async () => {
         const broken = makeSkill("broken");
         mockSkillRegistry.composeConfig.mockRejectedValueOnce(new Error("compose failed"));
-    
+
         const orchestrator = new AgentOrchestrator({ apiKey: "k-subtask" });
-    
+
         const out = await (
             orchestrator as unknown as {
-                executeSubtask: (subtask: unknown, conversationHistory: unknown[]) => Promise<{
+                executeSubtask: (
+                    subtask: unknown,
+                    conversationHistory: unknown[]
+                ) => Promise<{
                     status: string;
                     error?: string;
                     skillIds: string[];
@@ -260,19 +263,24 @@ describe("AgentOrchestrator", () => {
             },
             []
         );
-    
+
         expect(out.status).toBe("failed");
         expect(out.error).toBe("compose failed");
         expect(out.skillIds).toEqual(["broken"]);
     });
-    
+
     test("synthesize returns direct content for exactly one completed result", async () => {
         const orchestrator = new AgentOrchestrator({ apiKey: "k-synth-1" });
-    
-        const synthesize = (orchestrator as unknown as {
-            synthesize: (results: Array<Record<string, unknown>>, originalPrompt: string) => Promise<string>;
-        }).synthesize.bind(orchestrator);
-    
+
+        const synthesize = (
+            orchestrator as unknown as {
+                synthesize: (
+                    results: Array<Record<string, unknown>>,
+                    originalPrompt: string
+                ) => Promise<string>;
+            }
+        ).synthesize.bind(orchestrator);
+
         const out = await synthesize(
             [
                 {
@@ -286,18 +294,23 @@ describe("AgentOrchestrator", () => {
             ],
             "prompt"
         );
-    
+
         expect(out).toBe("single complete answer");
         expect(mockGenerateText).not.toHaveBeenCalled();
     });
-    
+
     test("synthesize returns failure summary when no subtask completed", async () => {
         const orchestrator = new AgentOrchestrator({ apiKey: "k-synth-2" });
-    
-        const synthesize = (orchestrator as unknown as {
-            synthesize: (results: Array<Record<string, unknown>>, originalPrompt: string) => Promise<string>;
-        }).synthesize.bind(orchestrator);
-    
+
+        const synthesize = (
+            orchestrator as unknown as {
+                synthesize: (
+                    results: Array<Record<string, unknown>>,
+                    originalPrompt: string
+                ) => Promise<string>;
+            }
+        ).synthesize.bind(orchestrator);
+
         const out = await synthesize(
             [
                 {
@@ -321,20 +334,25 @@ describe("AgentOrchestrator", () => {
             ],
             "prompt"
         );
-    
+
         expect(out).toContain("I wasn't able to complete your request.");
         expect(out).toContain("rate limited");
     });
-    
+
     test("synthesize falls back to completed content when LLM synthesis fails", async () => {
         mockGenerateText.mockRejectedValueOnce(new Error("synthesis failed"));
-    
+
         const orchestrator = new AgentOrchestrator({ apiKey: "k-synth-3" });
-    
-        const synthesize = (orchestrator as unknown as {
-            synthesize: (results: Array<Record<string, unknown>>, originalPrompt: string) => Promise<string>;
-        }).synthesize.bind(orchestrator);
-    
+
+        const synthesize = (
+            orchestrator as unknown as {
+                synthesize: (
+                    results: Array<Record<string, unknown>>,
+                    originalPrompt: string
+                ) => Promise<string>;
+            }
+        ).synthesize.bind(orchestrator);
+
         const results = [
             {
                 subtaskId: "c1",
@@ -354,9 +372,9 @@ describe("AgentOrchestrator", () => {
                 durationMs: 1,
             },
         ];
-    
+
         const out = await synthesize(results, "prompt");
-    
+
         expect(mockGenerateText).toHaveBeenCalledWith(
             expect.objectContaining({
                 prompt: expect.stringContaining("FAILED - network timeout"),

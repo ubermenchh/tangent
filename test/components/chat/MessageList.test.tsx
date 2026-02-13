@@ -1,9 +1,14 @@
 import React from "react";
-import { render } from "@testing-library/react-native";
+import { act, render } from "@testing-library/react-native";
 import { MessageList } from "@/components/chat/MessageList";
 
 const mockState = {
-    messages: [] as Array<{ id: string; role: "user" | "assistant"; content: string; timestamp: number }>,
+    messages: [] as Array<{
+        id: string;
+        role: "user" | "assistant";
+        content: string;
+        timestamp: number;
+    }>,
 };
 
 jest.mock("react-native-reanimated", () => {
@@ -49,7 +54,9 @@ describe("MessageList", () => {
     });
 
     afterEach(() => {
-        jest.runOnlyPendingTimers();
+        act(() => {
+            jest.runOnlyPendingTimers();
+        });
         jest.useRealTimers();
     });
 

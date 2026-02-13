@@ -90,7 +90,10 @@ describe("web tools", () => {
         const toolRegistry = loadWebTools();
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
 
-        const result = await getExecutor(tools, "web_search")({
+        const result = await getExecutor(
+            tools,
+            "web_search"
+        )({
             query: "latest ai news",
         });
 
@@ -114,7 +117,10 @@ describe("web tools", () => {
         const toolRegistry = loadWebTools("exa-key-2");
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
 
-        const result = (await getExecutor(tools, "web_search")({
+        const result = (await getExecutor(
+            tools,
+            "web_search"
+        )({
             query: "ai article",
             type: "neural",
             numResults: 3,
@@ -155,7 +161,10 @@ describe("web tools", () => {
         const toolRegistry = loadWebTools("exa-key-3");
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
 
-        const result = await getExecutor(tools, "web_search")({
+        const result = await getExecutor(
+            tools,
+            "web_search"
+        )({
             query: "ai",
         });
 
@@ -166,7 +175,10 @@ describe("web tools", () => {
         const toolRegistry = loadWebTools();
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
 
-        const result = await getExecutor(tools, "find_similar")({
+        const result = await getExecutor(
+            tools,
+            "find_similar"
+        )({
             url: "https://example.com",
         });
 
@@ -185,7 +197,10 @@ describe("web tools", () => {
         const toolRegistry = loadWebTools("exa-key-4");
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
 
-        const result = await getExecutor(tools, "find_similar")({
+        const result = await getExecutor(
+            tools,
+            "find_similar"
+        )({
             url: "https://seed.com",
             numResults: 2,
         });
@@ -210,7 +225,10 @@ describe("web tools", () => {
         const toolRegistry = loadWebTools();
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
 
-        const result = await getExecutor(tools, "get_page_content")({
+        const result = await getExecutor(
+            tools,
+            "get_page_content"
+        )({
             url: "https://example.com",
         });
 
@@ -232,7 +250,10 @@ describe("web tools", () => {
 
         const toolRegistryA = loadWebTools("exa-key-5");
         const toolsA = (await toolRegistryA.getTools()) as Record<string, { execute?: unknown }>;
-        const ok = await getExecutor(toolsA, "get_page_content")({
+        const ok = await getExecutor(
+            toolsA,
+            "get_page_content"
+        )({
             url: "https://example.com/page",
         });
 
@@ -251,7 +272,10 @@ describe("web tools", () => {
 
         const toolRegistryB = loadWebTools("exa-key-6");
         const toolsB = (await toolRegistryB.getTools()) as Record<string, { execute?: unknown }>;
-        const failed = await getExecutor(toolsB, "get_page_content")({
+        const failed = await getExecutor(
+            toolsB,
+            "get_page_content"
+        )({
             url: "https://example.com/fail",
         });
 

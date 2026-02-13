@@ -11,38 +11,44 @@ import { Clock, CheckCircle, XCircle, AlertCircle, X, Loader } from "lucide-reac
 const STATUS_CONFIG = {
     queued: {
         icon: Clock,
-        color: "#565f89",
-        bg: "bg-tokyo-comment/20",
+        color: "#b6bfdc",
+        border: "border-[#3a4158]",
+        bg: "bg-[#1b2032]",
         label: "Queued",
     },
     running: {
         icon: Loader,
-        color: "#7aa2f7",
-        bg: "bg-tokyo-blue/20",
+        color: "#c7d3ff",
+        border: "border-[#485483]",
+        bg: "bg-[#1c2548]",
         label: "Running",
     },
     awaiting_confirmation: {
         icon: AlertCircle,
-        color: "#e0af68",
-        bg: "bg-tokyo-yellow/20",
+        color: "#ffd392",
+        border: "border-[#7b5e35]",
+        bg: "bg-[#3b2a17]",
         label: "Awaiting Approval",
     },
     completed: {
         icon: CheckCircle,
-        color: "#9ece6a",
-        bg: "bg-tokyo-green/20",
+        color: "#b8f7e1",
+        border: "border-[#356456]",
+        bg: "bg-[#17362e]",
         label: "Completed",
     },
     failed: {
         icon: XCircle,
-        color: "#f7768e",
-        bg: "bg-tokyo-red/20",
+        color: "#ffb0be",
+        border: "border-[#7a3a4a]",
+        bg: "bg-[#4a1e29]",
         label: "Failed",
     },
     cancelled: {
         icon: X,
-        color: "#565f89",
-        bg: "bg-tokyo-comment/20",
+        color: "#a9b1cd",
+        border: "border-[#3a4158]",
+        bg: "bg-[#1b2032]",
         label: "Cancelled",
     },
 };
@@ -75,10 +81,14 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
     return (
         <Animated.View
             entering={FadeInDown.duration(200).springify()}
-            className={cn("p-4 rounded-xl border mb-3", config.bg, "border-tokyo-bg-highlight")}
+            className={cn(
+                "mb-3 overflow-hidden rounded-[24px] border p-4",
+                config.bg,
+                config.border,
+                "shadow-black/40"
+            )}
         >
-            {/* Header: Status + Cancel */}
-            <View className="flex-row items-center justify-between mb-2">
+            <View className="mb-2 flex-row items-center justify-between">
                 <View className="flex-row items-center gap-2">
                     <StatusIcon size={16} color={config.color} />
                     <Text style={{ color: config.color }} className="text-sm font-medium">
@@ -89,73 +99,67 @@ export const TaskItem = memo(function TaskItem({ task }: TaskItemProps) {
                 {isActive && (
                     <Pressable
                         onPress={handleCancel}
-                        className="p-2 rounded-lg bg-tokyo-red/20"
+                        className="rounded-full border border-[#7a3a4a] bg-[#4a1e29] p-2"
                         hitSlop={8}
                     >
-                        <X size={14} color="#f7768e" />
+                        <X size={14} color="#ff9aad" />
                     </Pressable>
                 )}
             </View>
 
-            {/* Prompt */}
-            <Text className="text-tokyo-fg text-base mb-2" numberOfLines={2}>
+            <Text className="mb-2 text-base text-[#eff3ff]" numberOfLines={2}>
                 {task.prompt}
             </Text>
 
-            {/* Progress Bar (for running tasks) */}
             {task.status === "running" && (
                 <View className="mb-2">
-                    <View className="h-1 bg-tokyo-bg-highlight rounded-full overflow-hidden">
+                    <View className="h-1.5 overflow-hidden rounded-full bg-[#2a3044]">
                         <View
-                            className="h-full bg-tokyo-blue rounded-full"
+                            className="h-full rounded-full bg-[#aab8ff]"
                             style={{ width: `${task.progress}%` }}
                         />
                     </View>
                     {task.currentStep && (
-                        <Text className="text-tokyo-comment text-xs mt-1">{task.currentStep}</Text>
+                        <Text className="mt-1 text-xs text-[#a0aaca]">{task.currentStep}</Text>
                     )}
                 </View>
             )}
 
-            {/* Confirmation UI */}
             {needsConfirmation && task.pendingConfirmation && (
-                <View className="mt-2 p-3 bg-tokyo-yellow/10 rounded-lg border border-tokyo-yellow/30">
-                    <Text className="text-tokyo-yellow text-sm font-medium mb-2">
+                <View className="mt-2 rounded-2xl border border-[#7b5e35] bg-[#2e2213] p-3">
+                    <Text className="mb-2 text-sm font-medium text-[#ffd392]">
                         {task.pendingConfirmation.description}
                     </Text>
                     <View className="flex-row gap-2">
                         <Pressable
                             onPress={() => handleConfirm(true)}
-                            className="flex-1 py-2 rounded-lg bg-tokyo-green items-center"
+                            className="flex-1 items-center rounded-xl border border-[#84e0bf] bg-[#dff6ee] py-2"
                         >
-                            <Text className="text-tokyo-bg font-medium">Approve</Text>
+                            <Text className="font-medium text-[#10291f]">Approve</Text>
                         </Pressable>
                         <Pressable
                             onPress={() => handleConfirm(false)}
-                            className="flex-1 py-2 rounded-lg bg-tokyo-red items-center"
+                            className="flex-1 items-center rounded-xl border border-[#7a3a4a] bg-[#4a1e29] py-2"
                         >
-                            <Text className="text-tokyo-bg font-medium">Deny</Text>
+                            <Text className="font-medium text-[#ffd3dc]">Deny</Text>
                         </Pressable>
                     </View>
                 </View>
             )}
 
-            {/* Error Message */}
             {task.status === "failed" && task.error && (
-                <View className="mt-2 p-2 bg-tokyo-red/10 rounded-lg">
-                    <Text className="text-tokyo-red text-sm">{task.error}</Text>
+                <View className="mt-2 rounded-xl border border-[#7a3a4a] bg-[#3a1d2a] p-2">
+                    <Text className="text-sm text-[#ffb0be]">{task.error}</Text>
                 </View>
             )}
 
-            {/* Result Message */}
             {task.status === "completed" && task.result && (
-                <View className="mt-2 p-2 bg-tokyo-green/10 rounded-lg">
-                    <Text className="text-tokyo-green text-sm">{task.result}</Text>
+                <View className="mt-2 rounded-xl border border-[#356456] bg-[#0f1c1a] p-3">
+                    <Text className="text-sm text-[#dff6ee]">{task.result}</Text>
                 </View>
             )}
 
-            {/* Timestamp */}
-            <Text className="text-tokyo-comment text-xs mt-2">
+            <Text className="mt-2 text-xs text-[#97a0bf]">
                 {new Date(task.createdAt).toLocaleString()}
             </Text>
         </Animated.View>

@@ -74,7 +74,10 @@ describe("phone tools (part 2)", () => {
         mockOpenURL.mockResolvedValueOnce(undefined);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "navigate_to")({
+        const result = await getExecutor(
+            tools,
+            "navigate_to"
+        )({
             destination: "Times Square, New York",
             mode: "walking",
         });
@@ -94,7 +97,10 @@ describe("phone tools (part 2)", () => {
             .mockResolvedValueOnce(undefined);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "navigate_to")({
+        const result = await getExecutor(
+            tools,
+            "navigate_to"
+        )({
             destination: "MG Road Bengaluru",
             mode: "driving",
         });
@@ -117,7 +123,10 @@ describe("phone tools (part 2)", () => {
         mockOpenURL.mockResolvedValueOnce(undefined);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "send_whatsapp")({
+        const result = await getExecutor(
+            tools,
+            "send_whatsapp"
+        )({
             phoneNumber: "+1 (234) 567-8900",
             message: "hello there",
         });
@@ -135,7 +144,10 @@ describe("phone tools (part 2)", () => {
         mockOpenURL.mockResolvedValueOnce(undefined);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "send_whatsapp")({
+        const result = await getExecutor(
+            tools,
+            "send_whatsapp"
+        )({
             phoneNumber: "+91-9876543210",
         });
 
@@ -150,7 +162,10 @@ describe("phone tools (part 2)", () => {
         mockOpenURL.mockRejectedValueOnce(new Error("not installed"));
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "send_whatsapp")({
+        const result = await getExecutor(
+            tools,
+            "send_whatsapp"
+        )({
             phoneNumber: "+1234567890",
             message: "hi",
         });
@@ -165,13 +180,14 @@ describe("phone tools (part 2)", () => {
         mockOpenURL.mockResolvedValueOnce(undefined);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "search_youtube")({
+        const result = await getExecutor(
+            tools,
+            "search_youtube"
+        )({
             query: "lofi beats",
         });
 
-        expect(mockOpenURL).toHaveBeenCalledWith(
-            "youtube://results?search_query=lofi%20beats"
-        );
+        expect(mockOpenURL).toHaveBeenCalledWith("youtube://results?search_query=lofi%20beats");
         expect(result).toEqual({
             success: true,
             message: 'Searching YouTube for "lofi beats"',
@@ -184,14 +200,14 @@ describe("phone tools (part 2)", () => {
             .mockResolvedValueOnce(undefined);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "search_youtube")({
+        const result = await getExecutor(
+            tools,
+            "search_youtube"
+        )({
             query: "mix",
         });
 
-        expect(mockOpenURL).toHaveBeenNthCalledWith(
-            1,
-            "youtube://results?search_query=mix"
-        );
+        expect(mockOpenURL).toHaveBeenNthCalledWith(1, "youtube://results?search_query=mix");
         expect(mockOpenURL).toHaveBeenNthCalledWith(
             2,
             "https://www.youtube.com/results?search_query=mix"

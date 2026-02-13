@@ -29,6 +29,7 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import * as Contacts from "expo-contacts";
 import { cn } from "@/lib/utils";
 import { buildIndex, getIndexStats, clearIndex, IndexProgress } from "@/index/manager";
+import { SectionCard } from "@/components/ui/SectionCard";
 
 type PermissionStatus = "granted" | "denied" | "undetermined";
 
@@ -155,7 +156,7 @@ export default function SettingsScreen() {
             case "denied":
                 return "text-tokyo-red";
             default:
-                return "text-tokyo-fg-comment";
+                return "text-tokyo-comment";
         }
     };
 
@@ -182,265 +183,295 @@ export default function SettingsScreen() {
 
     return (
         <KeyboardAvoidingView
-            className="flex-1 bg-tokyo-bg"
+            className="flex-1 bg-[#04050b]"
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
         >
-            {/* Header */}
-            <View className="flex-row px-4 py-3 items-center gap-3 border-b border-tokyo-bg-hightlight">
-                <TouchableOpacity className="p-2 rounded-full" onPress={handleBack}>
-                    <ArrowLeft size={24} color="white" />
-                </TouchableOpacity>
-                <Text className="text-tokyo-fg text-2xl font-bold">Settings</Text>
+            <View pointerEvents="none" className="absolute inset-0">
+                <View
+                    className="absolute rounded-full bg-[#89a2ff]/15"
+                    style={{ width: 220, height: 220, top: 40, right: -100 }}
+                />
+                <View
+                    className="absolute rounded-full bg-[#8de0d4]/10"
+                    style={{ width: 240, height: 240, bottom: 80, left: -120 }}
+                />
             </View>
 
-            {/* Content */}
-            <ScrollView className="flex-1 px-4 py-4" contentContainerStyle={{ gap: 24 }}>
-                {/* Gemini API Key Section */}
-                <View className="gap-3">
-                    <Text className="text-tokyo-fg text-lg font-semibold">Gemini API Key</Text>
-                    <Text className="text-tokyo-fg-dark text-sm">
-                        Get your API key from Google AI Studio (aistudio.google.com)
+            <View className="min-h-[66px] flex-row items-center gap-3 border-b border-[#1a1d28] bg-[#060812]/90 px-4 py-3">
+                <TouchableOpacity
+                    className="h-10 w-10 items-center justify-center rounded-full border border-[#2a2e3f] bg-[#111524]"
+                    onPress={handleBack}
+                    accessibilityLabel="Back"
+                >
+                    <ArrowLeft size={20} color="#e7ecff" />
+                </TouchableOpacity>
+                <View className="flex-1">
+                    <Text className="text-2xl font-bold text-[#f1f4ff]">Settings</Text>
+                    <Text className="text-xs text-[#9aa3c2]">
+                        Privacy, permissions, and local intelligence
                     </Text>
-
-                    <View className="flex-row gap-2">
-                        <TextInput
-                            className="flex-1 bg-tokyo-storm text-tokyo-fg px-4 py-3 rounded-xl text-base border border-tokyo-terminal"
-                            value={apiKey}
-                            onChangeText={setApiKey}
-                            placeholder="Enter your Gemini API key..."
-                            placeholderTextColor="#565f89"
-                            secureTextEntry={!showKey}
-                        />
-                        <TouchableOpacity
-                            className="w-12 items-center justify-center"
-                            onPress={() => setShowKey(!showKey)}
-                        >
-                            {showKey ? (
-                                <EyeOff size={20} color="#565f89" />
-                            ) : (
-                                <Eye size={20} color="#565f89" />
-                            )}
-                        </TouchableOpacity>
-                    </View>
-
-                    <TouchableOpacity
-                        className={cn(
-                            "py-3 rounded-xl items-center flex-row justify-center gap-2",
-                            hasChanges ? "bg-tokyo-blue" : "bg-tokyo-bg-highlight"
-                        )}
-                        onPress={handleSave}
-                        disabled={!hasChanges}
-                    >
-                        {saved && <Check size={18} color="white" />}
-                        <Text
-                            className={cn(
-                                "font-semibold",
-                                hasChanges ? "text-tokyo-fg" : "text-tokyo-fg-comment"
-                            )}
-                        >
-                            {saved ? "Saved!" : "Save API Key"}
-                        </Text>
-                    </TouchableOpacity>
                 </View>
+            </View>
 
-                {/* File Indexing Section */}
-                <View className="gap-3">
-                    <View className="flex-row items-center gap-2">
-                        <FolderSearch size={20} color="white" />
-                        <Text className="text-tokyo-fg text-lg font-semibold">File Index</Text>
-                    </View>
-                    <Text className="text-tokyo-fg-dark text-sm">
-                        Index local files to enable natural language search
-                    </Text>
-
-                    {/* Index Stats */}
-                    <View className="bg-tokyo-storm p-4 rounded-xl border border-tokyo-bg-hightlight">
-                        <View className="flex-row justify-between mb-3">
-                            <Text className="text-tokyo-fg-dark text-sm">Files indexed</Text>
-                            <Text className="text-tokyo-fg text-sm font-medium">
-                                {indexStats.count}
-                            </Text>
+            <ScrollView
+                className="flex-1 px-4"
+                contentContainerStyle={{ gap: 16, paddingTop: 16, paddingBottom: 32 }}
+            >
+                <SectionCard
+                    title="Gemini API Key"
+                    subtitle="Get your API key from Google AI Studio (aistudio.google.com)"
+                    className="overflow-hidden rounded-[26px] border border-[#ffffff24] bg-[#0f1322]/90"
+                    bodyClassName="pt-3"
+                >
+                    <View className="gap-3">
+                        <View className="flex-row items-center gap-2">
+                            <TextInput
+                                className="flex-1 rounded-2xl border border-[#2b3147] bg-[#0b0e18] px-4 py-3 text-base text-[#ecf1ff]"
+                                value={apiKey}
+                                onChangeText={setApiKey}
+                                placeholder="Enter your Gemini API key..."
+                                placeholderTextColor="#7d85a1"
+                                secureTextEntry={!showKey}
+                            />
+                            <TouchableOpacity
+                                className="h-12 w-12 items-center justify-center rounded-2xl border border-[#2b3147] bg-[#0b0e18]"
+                                onPress={() => setShowKey(!showKey)}
+                            >
+                                {showKey ? (
+                                    <EyeOff size={20} color="#a0a8c8" />
+                                ) : (
+                                    <Eye size={20} color="#a0a8c8" />
+                                )}
+                            </TouchableOpacity>
                         </View>
-                        <View className="flex-row justify-between">
-                            <Text className="text-tokyo-fg-dark text-sm">Last updated</Text>
-                            <Text className="text-tokyo-fg text-sm font-medium">
-                                {formatLastUpdated(indexStats.lastUpdated)}
-                            </Text>
-                        </View>
-                    </View>
 
-                    {/* Progress indicator */}
-                    {isIndexing && indexProgress && (
-                        <View className="bg-tokyo-storm p-4 rounded-xl border border-tokyo-blue">
-                            <View className="flex-row items-center gap-3 mb-2">
-                                <ActivityIndicator size="small" color="#7aa2f7" />
-                                <Text className="text-tokyo-blue text-sm font-medium capitalize">
-                                    {indexProgress.phase}...
-                                </Text>
-                            </View>
-                            {indexProgress.phase === "embedding" && (
-                                <>
-                                    <Text className="text-tokyo-fg-dark text-xs mb-1">
-                                        {indexProgress.current} / {indexProgress.total} files
-                                    </Text>
-                                    {indexProgress.file && (
-                                        <Text
-                                            className="text-tokyo-fg-comment text-xs"
-                                            numberOfLines={1}
-                                        >
-                                            {indexProgress.file}
-                                        </Text>
-                                    )}
-                                </>
-                            )}
-                        </View>
-                    )}
-
-                    {/* Action buttons */}
-                    <View className="flex-row gap-3">
                         <TouchableOpacity
                             className={cn(
-                                "flex-1 py-3 rounded-xl items-center flex-row justify-center gap-2",
-                                isIndexing || !geminiApiKey
-                                    ? "bg-tokyo-bg-highlight"
-                                    : "bg-tokyo-blue"
+                                "flex-row items-center justify-center gap-2 rounded-2xl border py-3.5",
+                                hasChanges
+                                    ? "border-[#8f9cff] bg-[#dfe4ff]"
+                                    : "border-[#2d3348] bg-[#151a2a]"
                             )}
-                            onPress={handleStartIndexing}
-                            disabled={isIndexing || !geminiApiKey}
+                            onPress={handleSave}
+                            disabled={!hasChanges}
                         >
-                            {isIndexing ? (
-                                <ActivityIndicator size="small" color="white" />
-                            ) : (
-                                <RefreshCw size={18} color={geminiApiKey ? "white" : "#565f89"} />
-                            )}
+                            {saved && <Check size={18} color="#111426" />}
                             <Text
                                 className={cn(
                                     "font-semibold",
-                                    geminiApiKey ? "text-tokyo-fg" : "text-tokyo-fg-comment"
+                                    hasChanges ? "text-[#111426]" : "text-[#7f86a3]"
                                 )}
                             >
-                                {isIndexing ? "Indexing..." : "Start Indexing"}
+                                {saved ? "Saved!" : "Save API Key"}
                             </Text>
                         </TouchableOpacity>
-
-                        <TouchableOpacity
-                            className={cn(
-                                "px-4 py-3 rounded-xl items-center justify-center",
-                                indexStats.count > 0 ? "bg-tokyo-red/20" : "bg-tokyo-bg-highlight"
-                            )}
-                            onPress={handleClearIndex}
-                            disabled={indexStats.count === 0 || isIndexing}
-                        >
-                            <Trash2
-                                size={18}
-                                color={indexStats.count > 0 ? "#f7768e" : "#565f89"}
-                            />
-                        </TouchableOpacity>
                     </View>
+                </SectionCard>
 
-                    <Text className="text-tokyo-comment text-xs">
-                        Scans Download, Documents, and DCIM folders for text files
-                    </Text>
-                </View>
-
-                {/* Permissions Section */}
-                <View className="gap-3">
-                    <View className="flex-row items-center gap-2">
-                        <Shield size={20} color="white" />
-                        <Text className="text-tokyo-fg text-lg font-semibold">Permissions</Text>
-                    </View>
-                    <Text className="text-tokyo-fg-dark text-sm">
-                        Grant permissions to enable all features
-                    </Text>
-
-                    {/* SMS Permission */}
-                    <View className="bg-tokyo-storm p-4 rounded-xl flex-row justify-between items-center border border-tokyo-bg-hightlight">
-                        <View className="flex-row gap-3 items-center flex-1">
-                            <MessageSquare size={24} color="white" />
-                            <View className="flex-1">
-                                <Text className="text-tokyo-fg text-base font-medium">
-                                    Send SMS
+                <SectionCard
+                    title="File Index"
+                    subtitle="Index local files to enable natural language search"
+                    right={<FolderSearch size={18} color="#d7deff" />}
+                    className="overflow-hidden rounded-[26px] border border-[#ffffff24] bg-[#0f1322]/90"
+                    bodyClassName="pt-3"
+                >
+                    <View className="gap-3">
+                        <View className="rounded-2xl border border-[#2b3147] bg-[#0b0e18] p-4">
+                            <View className="mb-3 flex-row items-center justify-between">
+                                <Text className="text-sm text-[#a4aecf]">Files indexed</Text>
+                                <Text className="text-sm font-medium text-[#ecf1ff]">
+                                    {indexStats.count}
                                 </Text>
-                                <Text className={cn("text-sm", getStatusColor(smsPermission))}>
-                                    {getStatusText(smsPermission)}
+                            </View>
+                            <View className="flex-row items-center justify-between">
+                                <Text className="text-sm text-[#a4aecf]">Last updated</Text>
+                                <Text className="text-sm font-medium text-[#ecf1ff]">
+                                    {formatLastUpdated(indexStats.lastUpdated)}
                                 </Text>
                             </View>
                         </View>
-                        <TouchableOpacity
-                            className={cn(
-                                "px-4 py-2 rounded-lg",
-                                smsPermission === "granted"
-                                    ? "bg-tokyo-bg-highlight"
-                                    : "bg-tokyo-blue"
-                            )}
-                            onPress={
-                                smsPermission === "granted"
-                                    ? () => Linking.openSettings()
-                                    : requestSmsPermission
-                            }
-                        >
-                            <Text
+
+                        {isIndexing && indexProgress && (
+                            <View className="rounded-2xl border border-[#4f5a85] bg-[#141a2d] p-4">
+                                <View className="mb-2 flex-row items-center gap-3">
+                                    <ActivityIndicator size="small" color="#b9c6ff" />
+                                    <Text className="text-sm font-medium capitalize text-[#c9d3ff]">
+                                        {indexProgress.phase}...
+                                    </Text>
+                                </View>
+                                {indexProgress.phase === "embedding" && (
+                                    <>
+                                        <Text className="mb-1 text-xs text-[#b5bedc]">
+                                            {indexProgress.current} / {indexProgress.total} files
+                                        </Text>
+                                        {indexProgress.file && (
+                                            <Text
+                                                className="text-xs text-[#8f97b2]"
+                                                numberOfLines={1}
+                                            >
+                                                {indexProgress.file}
+                                            </Text>
+                                        )}
+                                    </>
+                                )}
+                            </View>
+                        )}
+
+                        <View className="flex-row items-stretch gap-3">
+                            <TouchableOpacity
                                 className={cn(
-                                    "text-sm font-semibold",
+                                    "flex-1 flex-row items-center justify-center gap-2 rounded-2xl border py-3.5",
+                                    isIndexing || !geminiApiKey
+                                        ? "border-[#2d3348] bg-[#151a2a]"
+                                        : "border-[#8f9cff] bg-[#dfe4ff]"
+                                )}
+                                onPress={handleStartIndexing}
+                                disabled={isIndexing || !geminiApiKey}
+                            >
+                                {isIndexing ? (
+                                    <ActivityIndicator size="small" color="#111426" />
+                                ) : (
+                                    <RefreshCw
+                                        size={18}
+                                        color={geminiApiKey ? "#111426" : "#7f86a3"}
+                                    />
+                                )}
+                                <Text
+                                    className={cn(
+                                        "font-semibold",
+                                        geminiApiKey ? "text-[#111426]" : "text-[#7f86a3]"
+                                    )}
+                                >
+                                    {isIndexing ? "Indexing..." : "Start Indexing"}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                className={cn(
+                                    "items-center justify-center rounded-2xl border px-4 py-3",
+                                    indexStats.count > 0
+                                        ? "border-tokyo-red/40 bg-tokyo-red/20"
+                                        : "border-[#2d3348] bg-[#151a2a]"
+                                )}
+                                onPress={handleClearIndex}
+                                disabled={indexStats.count === 0 || isIndexing}
+                            >
+                                <Trash2
+                                    size={18}
+                                    color={indexStats.count > 0 ? "#f7768e" : "#565f89"}
+                                />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text className="text-xs leading-5 text-[#8f97b2]">
+                            Scans Download, Documents, and DCIM folders for text files
+                        </Text>
+                    </View>
+                </SectionCard>
+
+                <SectionCard
+                    title="Permissions"
+                    subtitle="Grant permissions to enable all features"
+                    right={<Shield size={18} color="#d7deff" />}
+                    className="overflow-hidden rounded-[26px] border border-[#ffffff24] bg-[#0f1322]/90"
+                    bodyClassName="pt-3"
+                >
+                    <View className="gap-3">
+                        <View className="flex-row items-center justify-between rounded-2xl border border-[#2b3147] bg-[#0b0e18] p-4">
+                            <View className="flex-1 flex-row items-center gap-3">
+                                <MessageSquare size={22} color="#e7edff" />
+                                <View className="flex-1">
+                                    <Text className="text-base font-medium text-[#ecf1ff]">
+                                        Send SMS
+                                    </Text>
+                                    <Text className={cn("text-sm", getStatusColor(smsPermission))}>
+                                        {getStatusText(smsPermission)}
+                                    </Text>
+                                </View>
+                            </View>
+                            <TouchableOpacity
+                                className={cn(
+                                    "min-w-[84px] rounded-full border px-4 py-2",
                                     smsPermission === "granted"
-                                        ? "text-tokyo-fg-dark"
-                                        : "text-tokyo-fg"
+                                        ? "border-[#2d3348] bg-[#151a2a]"
+                                        : "border-[#8f9cff] bg-[#dfe4ff]"
                                 )}
+                                onPress={
+                                    smsPermission === "granted"
+                                        ? () => Linking.openSettings()
+                                        : requestSmsPermission
+                                }
                             >
-                                {smsPermission === "granted" ? "Manage" : "Grant"}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Contacts Permission */}
-                    <View className="bg-tokyo-storm p-4 rounded-xl flex-row justify-between items-center border border-tokyo-bg-hightlight">
-                        <View className="flex-row gap-3 items-center flex-1">
-                            <Users size={24} color="white" />
-                            <View className="flex-1">
-                                <Text className="text-tokyo-fg text-base font-medium">
-                                    Contacts
+                                <Text
+                                    className={cn(
+                                        "text-center text-sm font-semibold",
+                                        smsPermission === "granted"
+                                            ? "text-[#a2abc8]"
+                                            : "text-[#111426]"
+                                    )}
+                                >
+                                    {smsPermission === "granted" ? "Manage" : "Grant"}
                                 </Text>
-                                <Text className={cn("text-sm", getStatusColor(contactsPermission))}>
-                                    {getStatusText(contactsPermission)}
-                                </Text>
-                            </View>
+                            </TouchableOpacity>
                         </View>
-                        <TouchableOpacity
-                            className={cn(
-                                "px-4 py-2 rounded-lg",
-                                contactsPermission === "granted"
-                                    ? "bg-tokyo-bg-highlight"
-                                    : "bg-tokyo-blue"
-                            )}
-                            onPress={
-                                contactsPermission === "granted"
-                                    ? () => Linking.openSettings()
-                                    : requestContactsPermission
-                            }
-                        >
-                            <Text
+
+                        <View className="flex-row items-center justify-between rounded-2xl border border-[#2b3147] bg-[#0b0e18] p-4">
+                            <View className="flex-1 flex-row items-center gap-3">
+                                <Users size={22} color="#e7edff" />
+                                <View className="flex-1">
+                                    <Text className="text-base font-medium text-[#ecf1ff]">
+                                        Contacts
+                                    </Text>
+                                    <Text
+                                        className={cn(
+                                            "text-sm",
+                                            getStatusColor(contactsPermission)
+                                        )}
+                                    >
+                                        {getStatusText(contactsPermission)}
+                                    </Text>
+                                </View>
+                            </View>
+                            <TouchableOpacity
                                 className={cn(
-                                    "text-sm font-semibold",
+                                    "min-w-[84px] rounded-full border px-4 py-2",
                                     contactsPermission === "granted"
-                                        ? "text-tokyo-fg-dark"
-                                        : "text-tokyo-fg"
+                                        ? "border-[#2d3348] bg-[#151a2a]"
+                                        : "border-[#8f9cff] bg-[#dfe4ff]"
                                 )}
+                                onPress={
+                                    contactsPermission === "granted"
+                                        ? () => Linking.openSettings()
+                                        : requestContactsPermission
+                                }
                             >
-                                {contactsPermission === "granted" ? "Manage" : "Grant"}
-                            </Text>
-                        </TouchableOpacity>
+                                <Text
+                                    className={cn(
+                                        "text-center text-sm font-semibold",
+                                        contactsPermission === "granted"
+                                            ? "text-[#a2abc8]"
+                                            : "text-[#111426]"
+                                    )}
+                                >
+                                    {contactsPermission === "granted" ? "Manage" : "Grant"}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
+                </SectionCard>
 
                 {/* Info */}
-                <View className="p-4 bg-tokyo-storm rounded-xl border border-tokyo-bg-hightlight gap-2">
-                    <Text className="text-tokyo-fg text-base font-medium">About Tangent</Text>
-                    <Text className="text-tokyo-fg-dark text-sm">
+                <SectionCard
+                    title="About Tangent"
+                    className="overflow-hidden rounded-[26px] border border-[#ffffff24] bg-[#0f1322]/90"
+                    bodyClassName="pt-3"
+                >
+                    <Text className="text-sm leading-6 text-[#a9b3d2]">
                         Tangent uses Gemini to understand your requests and execute actions on your
                         phone. Your API key is stored securely on your device.
                     </Text>
-                </View>
+                </SectionCard>
             </ScrollView>
         </KeyboardAvoidingView>
     );

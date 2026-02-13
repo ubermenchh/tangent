@@ -98,14 +98,19 @@ describe("app/settings (batch 1)", () => {
         mockClearIndex.mockImplementation(() => undefined);
 
         mockContacts.getPermissionsAsync.mockResolvedValue({ granted: true });
-        mockContacts.requestPermissionsAsync.mockResolvedValue({ granted: true, canAskAgain: true });
+        mockContacts.requestPermissionsAsync.mockResolvedValue({
+            granted: true,
+            canAskAgain: true,
+        });
 
         jest.spyOn(Linking, "openSettings").mockResolvedValue();
         globalWithAlert.alert = mockAlert;
         mockAlert.mockReset();
 
         jest.spyOn(PermissionsAndroid, "check").mockResolvedValue(false);
-        jest.spyOn(PermissionsAndroid, "request").mockResolvedValue(PermissionsAndroid.RESULTS.DENIED);
+        jest.spyOn(PermissionsAndroid, "request").mockResolvedValue(
+            PermissionsAndroid.RESULTS.DENIED
+        );
     });
 
     afterEach(() => {
@@ -198,119 +203,123 @@ describe("app/settings (batch 1)", () => {
         const dateSpy = jest
             .spyOn(Date.prototype, "toLocaleDateString")
             .mockReturnValue("Mock Date");
-    
+
         mockGetIndexStats.mockReturnValue({ count: 12, lastUpdated: 1700000000000 });
-    
+
         const { getByText } = await renderSettingsScreen();
-    
+
         expect(getByText("12")).toBeTruthy();
         expect(getByText("Mock Date")).toBeTruthy();
-    
+
         dateSpy.mockRestore();
     });
-    
+
     test("starts indexing when api key exists and refreshes stats", async () => {
         mockGeminiApiKey = "key-1";
-    
+
         const originalRaf = (
             global as unknown as { requestAnimationFrame?: (cb: (t: number) => void) => number }
         ).requestAnimationFrame;
-    
+
         (
             global as unknown as { requestAnimationFrame: (cb: (t: number) => void) => number }
         ).requestAnimationFrame = cb => {
             cb(0);
             return 0;
         };
-    
+
         const { getByText } = await renderSettingsScreen();
-    
+
         fireEvent.press(getByText("Start Indexing"));
-    
+
         await waitFor(() => {
             expect(mockBuildIndex).toHaveBeenCalledWith("key-1", undefined, expect.any(Function));
         });
-    
+
         // initial refresh + post-index refresh
         expect(mockGetIndexStats.mock.calls.length).toBeGreaterThanOrEqual(2);
-    
+
         (
             global as unknown as { requestAnimationFrame?: (cb: (t: number) => void) => number }
         ).requestAnimationFrame = originalRaf;
     });
-    
+
     test("shows alert when indexing fails", async () => {
         mockGeminiApiKey = "key-2";
         mockBuildIndex.mockRejectedValueOnce(new Error("boom"));
-    
+
         const originalRaf = (
             global as unknown as { requestAnimationFrame?: (cb: (t: number) => void) => number }
         ).requestAnimationFrame;
-    
+
         (
             global as unknown as { requestAnimationFrame: (cb: (t: number) => void) => number }
         ).requestAnimationFrame = cb => {
             cb(0);
             return 0;
         };
-    
+
         const { getByText } = await renderSettingsScreen();
         fireEvent.press(getByText("Start Indexing"));
-    
+
         await waitFor(() => {
             expect(mockAlert).toHaveBeenCalledWith("Indexing failed: boom");
         });
-    
+
         (
             global as unknown as { requestAnimationFrame?: (cb: (t: number) => void) => number }
         ).requestAnimationFrame = originalRaf;
     });
-    
+
     test("clear index button calls clearIndex and refreshes stats", async () => {
         mockGetIndexStats.mockReturnValue({ count: 4, lastUpdated: null });
-    
+
         const { UNSAFE_getAllByType } = await renderSettingsScreen();
         const touchables = UNSAFE_getAllByType(TouchableOpacity);
-    
+
         const clearButton = touchables.find(
-            t => typeof t.props.className === "string" && t.props.className.includes("bg-tokyo-red/20")
+            t =>
+                typeof t.props.className === "string" &&
+                t.props.className.includes("bg-tokyo-red/20")
         );
-    
+
         expect(clearButton).toBeTruthy();
         fireEvent.press(clearButton!);
-    
+
         expect(mockClearIndex).toHaveBeenCalledTimes(1);
         expect(mockGetIndexStats.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
-    
+
     test("sms grant path opens settings on never_ask_again", async () => {
-        (PermissionsAndroid.request as jest.MockedFunction<typeof PermissionsAndroid.request>)
-            .mockResolvedValueOnce(PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN);
-    
+        (
+            PermissionsAndroid.request as jest.MockedFunction<typeof PermissionsAndroid.request>
+        ).mockResolvedValueOnce(PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN);
+
         const { getByText } = await renderSettingsScreen();
-    
+
         fireEvent.press(getByText("Grant"));
-    
+
         await waitFor(() => {
             expect(PermissionsAndroid.request).toHaveBeenCalledTimes(1);
             expect(Linking.openSettings).toHaveBeenCalledTimes(1);
         });
     });
-    
+
     test("contacts grant path opens settings when denied and cannot ask again", async () => {
         // Make SMS already granted so only Contacts shows Grant
-        (PermissionsAndroid.check as jest.MockedFunction<typeof PermissionsAndroid.check>)
-            .mockResolvedValueOnce(true);
-    
+        (
+            PermissionsAndroid.check as jest.MockedFunction<typeof PermissionsAndroid.check>
+        ).mockResolvedValueOnce(true);
+
         mockContacts.getPermissionsAsync.mockResolvedValueOnce({ granted: false });
         mockContacts.requestPermissionsAsync.mockResolvedValueOnce({
             granted: false,
             canAskAgain: false,
         });
-    
+
         const { getByText } = await renderSettingsScreen();
         fireEvent.press(getByText("Grant"));
-    
+
         await waitFor(() => {
             expect(mockContacts.requestPermissionsAsync).toHaveBeenCalledTimes(1);
             expect(Linking.openSettings).toHaveBeenCalledTimes(1);

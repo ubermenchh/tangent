@@ -107,7 +107,7 @@ describe("phone tools (part 1)", () => {
     test("open_app falls back to scheme when native launch returns false", async () => {
         mockTA.launchApp.mockResolvedValueOnce(false);
         mockOpenURL.mockResolvedValueOnce(undefined);
-        
+
         // Exit verification loop on first poll
         mockTA.getScreenContent.mockResolvedValueOnce(
             JSON.stringify({
@@ -115,10 +115,10 @@ describe("phone tools (part 1)", () => {
                 elements: [],
             })
         );
-    
+
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
         const result = await getExecutor(tools, "open_app")({ app: "youtube" });
-    
+
         expect(mockTA.launchApp).toHaveBeenCalledWith("com.google.android.youtube");
         expect(mockOpenURL).toHaveBeenCalledWith("youtube://");
         expect(result).toEqual({
@@ -164,7 +164,10 @@ describe("phone tools (part 1)", () => {
         mockOpenURL.mockResolvedValueOnce(undefined); // store open by raw app id/name
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "open_app")({
+        const result = await getExecutor(
+            tools,
+            "open_app"
+        )({
             app: "com.custom.app",
         });
 
@@ -180,7 +183,10 @@ describe("phone tools (part 1)", () => {
         mockOpenURL.mockResolvedValueOnce(undefined);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "open_url")({
+        const result = await getExecutor(
+            tools,
+            "open_url"
+        )({
             url: "example.com",
         });
 

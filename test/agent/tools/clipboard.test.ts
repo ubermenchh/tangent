@@ -26,11 +26,12 @@ jest.mock("@/lib/logger", () => {
 import "@/agent/tools/clipboard";
 import { toolRegistry } from "@/agent/tools/registry";
 
-const { getStringAsync: mockGetStringAsync, setStringAsync: mockSetStringAsync } =
-    jest.requireMock("expo-clipboard") as {
-        getStringAsync: jest.Mock;
-        setStringAsync: jest.Mock;
-    };
+const { getStringAsync: mockGetStringAsync, setStringAsync: mockSetStringAsync } = jest.requireMock(
+    "expo-clipboard"
+) as {
+    getStringAsync: jest.Mock;
+    setStringAsync: jest.Mock;
+};
 
 function getExecutor(
     tools: Record<string, { execute?: unknown }>,

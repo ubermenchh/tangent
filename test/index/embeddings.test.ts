@@ -10,12 +10,15 @@ jest.mock("@/lib/llm", () => ({
 
 import { generateEmbedding, generateEmbeddings, findSimilar } from "@/index/embeddings";
 
-const { embed: mockEmbed, embedMany: mockEmbedMany, cosineSimilarity: mockCosineSimilarity } =
-    jest.requireMock("ai") as {
-        embed: jest.Mock;
-        embedMany: jest.Mock;
-        cosineSimilarity: jest.Mock;
-    };
+const {
+    embed: mockEmbed,
+    embedMany: mockEmbedMany,
+    cosineSimilarity: mockCosineSimilarity,
+} = jest.requireMock("ai") as {
+    embed: jest.Mock;
+    embedMany: jest.Mock;
+    cosineSimilarity: jest.Mock;
+};
 
 const { createEmbeddingModel: mockCreateEmbeddingModel } = jest.requireMock("@/lib/llm") as {
     createEmbeddingModel: jest.Mock;

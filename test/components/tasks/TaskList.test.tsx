@@ -58,7 +58,9 @@ describe("TaskList", () => {
         const { getByText } = render(<TaskList />);
 
         expect(getByText("No background tasks yet")).toBeTruthy();
-        expect(getByText("Long-press the send button to run a task in the background")).toBeTruthy();
+        expect(
+            getByText("Long-press the send button to run a task in the background")
+        ).toBeTruthy();
     });
 
     test("renders task items when tasks exist", () => {

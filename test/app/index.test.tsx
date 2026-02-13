@@ -6,7 +6,12 @@ const mockPush = jest.fn();
 const mockClearMessages = jest.fn();
 
 const mockChatState = {
-    messages: [] as Array<{ id: string; role: "user" | "assistant"; content: string; timestamp: number }>,
+    messages: [] as Array<{
+        id: string;
+        role: "user" | "assistant";
+        content: string;
+        timestamp: number;
+    }>,
     clearMessages: mockClearMessages,
 };
 
@@ -83,9 +88,7 @@ describe("app/index", () => {
     });
 
     test("renders message list and regular chat input when messages exist", () => {
-        mockChatState.messages = [
-            { id: "1", role: "user", content: "hello", timestamp: 1 },
-        ];
+        mockChatState.messages = [{ id: "1", role: "user", content: "hello", timestamp: 1 }];
 
         const { getByText, queryByText } = render(<HomeScreen />);
 
@@ -106,9 +109,7 @@ describe("app/index", () => {
     });
 
     test("shows new chat action only when messages exist and clears messages", () => {
-        mockChatState.messages = [
-            { id: "1", role: "assistant", content: "hey", timestamp: 1 },
-        ];
+        mockChatState.messages = [{ id: "1", role: "assistant", content: "hey", timestamp: 1 }];
 
         const { getByLabelText, queryByLabelText } = render(<HomeScreen />);
 

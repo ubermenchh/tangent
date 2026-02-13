@@ -53,14 +53,20 @@ const { logger: mockLogger } = jest.requireMock("@/lib/logger") as {
 import { Agent } from "@/agent/core";
 
 type StreamChunk = {
-    type: "text" | "tool-call" | "tool-call-end" | "thinking" | "reasoning" | "done" | "error" | "cancelled";
+    type:
+        | "text"
+        | "tool-call"
+        | "tool-call-end"
+        | "thinking"
+        | "reasoning"
+        | "done"
+        | "error"
+        | "cancelled";
     content?: string;
     toolCall?: unknown;
 };
 
-async function collectStream(
-    stream: AsyncGenerator<StreamChunk>
-): Promise<StreamChunk[]> {
+async function collectStream(stream: AsyncGenerator<StreamChunk>): Promise<StreamChunk[]> {
     const chunks: StreamChunk[] = [];
     for await (const chunk of stream) {
         chunks.push(chunk);
@@ -275,13 +281,13 @@ describe("Agent", () => {
             toolCalls: [],
             steps: [],
         });
-    
+
         const agent = new Agent({ apiKey: "k-default", maxSteps: 6 });
         await agent.processMessage("hello", []);
-    
+
         expect(mockStepCountIs).toHaveBeenCalledWith(6);
     });
-    
+
     test("processMessageStream chunks reasoning/text when streaming is enabled", async () => {
         mockGenerateText.mockResolvedValueOnce({
             text: "abcdefghij", // 10 chars -> 2 chunks (8 + 2)
@@ -289,73 +295,83 @@ describe("Agent", () => {
             toolCalls: [],
             steps: [],
         });
-    
+
         const agent = new Agent({ apiKey: "k-stream" });
-        const chunks = await collectStream(agent.processMessageStream("chunk me", [], { streaming: true }));
-    
-        const reasoningChunks = chunks.filter(c => c.type === "reasoning").map(c => c.content || "");
+        const chunks = await collectStream(
+            agent.processMessageStream("chunk me", [], { streaming: true })
+        );
+
+        const reasoningChunks = chunks
+            .filter(c => c.type === "reasoning")
+            .map(c => c.content || "");
         const textChunks = chunks.filter(c => c.type === "text").map(c => c.content || "");
-    
+
         expect(reasoningChunks).toEqual(["12345678", "9"]);
         expect(textChunks).toEqual(["abcdefgh", "ij"]);
         expect(chunks[chunks.length - 1]?.type).toBe("done");
     });
-    
+
     test("processMessageStream ignores tool end when no matching start exists", async () => {
         let listener: ((event: ToolEvent) => void) | undefined;
-    
+
         mockOnToolEvent.mockImplementation((cb: (event: ToolEvent) => void) => {
             listener = cb;
             return jest.fn();
         });
-    
+
         let resolveGenerate: ((value: unknown) => void) | undefined;
         const pending = new Promise(resolve => {
             resolveGenerate = resolve;
         });
         mockGenerateText.mockReturnValueOnce(pending);
-    
+
         const agent = new Agent({ apiKey: "k-tool-end" });
-        const streamPromise = collectStream(agent.processMessageStream("test", [], { streaming: false }));
-    
+        const streamPromise = collectStream(
+            agent.processMessageStream("test", [], { streaming: false })
+        );
+
         for (let i = 0; i < 5 && !listener; i++) {
             await Promise.resolve();
         }
-    
+
         if (!listener || !resolveGenerate) {
             throw new Error("listener/resolveGenerate not initialized");
         }
-    
+
         listener({ type: "end", toolName: "tap", args: { target: "x" }, result: { ok: true } });
-    
+
         resolveGenerate({
             text: "done",
             reasoningText: "",
             toolCalls: [],
             steps: [],
         });
-    
+
         const chunks = await streamPromise;
         expect(chunks.some(c => c.type === "tool-call-end")).toBe(false);
     });
-    
+
     test("processMessageStream emits unknown error message for undefined rejection", async () => {
         mockGenerateText.mockRejectedValueOnce(undefined);
-    
+
         const agent = new Agent({ apiKey: "k-undef" });
-        const chunks = await collectStream(agent.processMessageStream("hello", [], { streaming: false }));
-    
+        const chunks = await collectStream(
+            agent.processMessageStream("hello", [], { streaming: false })
+        );
+
         expect(chunks.map(c => c.type)).toEqual(["thinking", "error"]);
         expect(chunks[1]?.content).toBe("Unknown error occurred");
     });
-    
+
     test("processMessageStream maps AbortError to cancelled", async () => {
         const abortError = Object.assign(new Error("request aborted"), { name: "AbortError" });
         mockGenerateText.mockRejectedValueOnce(abortError);
-    
+
         const agent = new Agent({ apiKey: "k-abort" });
-        const chunks = await collectStream(agent.processMessageStream("hello", [], { streaming: false }));
-    
+        const chunks = await collectStream(
+            agent.processMessageStream("hello", [], { streaming: false })
+        );
+
         expect(chunks.map(c => c.type)).toEqual(["thinking", "cancelled"]);
     });
 });

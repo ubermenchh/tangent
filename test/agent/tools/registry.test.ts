@@ -121,7 +121,9 @@ describe("toolRegistry", () => {
         const result = await getExecutor(tools, "mode")({});
 
         expect(result).toBe("second");
-        expect(mockLog.warn).toHaveBeenCalledWith(expect.stringContaining('Tool "mode" already registered'));
+        expect(mockLog.warn).toHaveBeenCalledWith(
+            expect.stringContaining('Tool "mode" already registered')
+        );
     });
 
     test("initialize runs loaders once and tolerates loader failures", async () => {
@@ -149,7 +151,10 @@ describe("toolRegistry", () => {
         expect(successfulLoader).toHaveBeenCalledTimes(1);
         expect(toolsFirst.loaded_tool).toBeDefined();
         expect(toolsSecond.loaded_tool).toBeDefined();
-        expect(mockLog.warn).toHaveBeenCalledWith(expect.stringContaining("Tool loader 0 failed:"), expect.any(Error));
+        expect(mockLog.warn).toHaveBeenCalledWith(
+            expect.stringContaining("Tool loader 0 failed:"),
+            expect.any(Error)
+        );
     });
 
     test("has and getNames reflect current registry state", async () => {
@@ -196,6 +201,9 @@ describe("toolRegistry", () => {
             toolName: "explode",
             args: {},
         });
-        expect(mockLog.error).toHaveBeenCalledWith(expect.stringContaining("Tool explode failed"), expect.any(Error));
+        expect(mockLog.error).toHaveBeenCalledWith(
+            expect.stringContaining("Tool explode failed"),
+            expect.any(Error)
+        );
     });
 });

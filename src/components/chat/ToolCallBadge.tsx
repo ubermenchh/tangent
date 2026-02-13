@@ -25,36 +25,29 @@ import {
 } from "lucide-react-native";
 
 const TOOL_CONFIG: Record<string, { label: string; Icon: LucideIcon }> = {
-    // Web & Search
     web_search: { label: "Web Search", Icon: Globe },
     find_similar: { label: "Find Similar", Icon: Search },
     get_page_content: { label: "Get Page Content", Icon: Globe },
     search_files: { label: "Search Files", Icon: FolderSearch },
 
-    // Device
     get_device_info: { label: "Device Info", Icon: Smartphone },
     get_battery_status: { label: "Battery Status", Icon: Battery },
 
-    // Communication
     search_contacts: { label: "Search Contacts", Icon: Users },
     send_sms: { label: "Send SMS", Icon: MessageSquare },
     make_phone_call: { label: "Phone Call", Icon: Phone },
 
-    // Apps & Navigation
     open_app: { label: "Open App", Icon: Play },
     open_url: { label: "Open URL", Icon: Globe },
     navigate_to: { label: "Navigate", Icon: Navigation },
 
-    // Notifications & Reminders
     schedule_reminder: { label: "Schedule Reminder", Icon: Bell },
     get_scheduled_reminders: { label: "Get Reminders", Icon: Bell },
     cancel_reminder: { label: "Cancel Reminder", Icon: Bell },
 
-    // Clipboard
     get_clipboard: { label: "Get Clipboard", Icon: Clipboard },
     set_clipboard: { label: "Set Clipboard", Icon: Clipboard },
 
-    // Accessibility
     check_accessibility: { label: "Check Accessibility", Icon: Accessibility },
     get_screen: { label: "Get Screen", Icon: Smartphone },
     tap: { label: "Tap Element", Icon: Smartphone },
@@ -64,7 +57,6 @@ const TOOL_CONFIG: Record<string, { label: string; Icon: LucideIcon }> = {
     press_back: { label: "Press Back", Icon: ArrowLeft },
     go_home: { label: "Go Home", Icon: Home },
 
-    // YouTube
     search_videos: { label: "Search Videos", Icon: Play },
     play_video: { label: "Play Video", Icon: Play },
 };
@@ -74,8 +66,13 @@ function formatValue(value: unknown, maxLength = 200): string {
     if (typeof value === "string") {
         return value.length > maxLength ? value.slice(0, maxLength) + "..." : value;
     }
-    const str = JSON.stringify(value, null, 2);
-    return str.length > maxLength ? str.slice(0, maxLength) + "..." : str;
+
+    try {
+        const str = JSON.stringify(value, null, 2);
+        return str.length > maxLength ? str.slice(0, maxLength) + "..." : str;
+    } catch {
+        return String(value);
+    }
 }
 
 export function ToolCallBadge({ toolCall }: { toolCall: ToolCall }) {
@@ -84,43 +81,48 @@ export function ToolCallBadge({ toolCall }: { toolCall: ToolCall }) {
     const { label, Icon } = config;
 
     const isRunning = toolCall.status === "running";
+    const isPending = toolCall.status === "pending";
     const isSuccess = toolCall.status === "success";
     const isError = toolCall.status === "error";
 
-    const hasContent = Object.keys(toolCall.arguments || {}).length > 0 || toolCall.result;
+    const hasArgs = Object.keys(toolCall.arguments || {}).length > 0;
+    const hasResult = toolCall.result !== undefined;
+    const hasContent = hasArgs || hasResult;
+
+    const containerClass = isError
+        ? "border-[#7a3a4a] bg-[#3a1d2a]"
+        : isRunning || isPending
+          ? "border-[#45507a] bg-[#1d2646]"
+          : isSuccess
+            ? "border-[#356456] bg-[#17362e]"
+            : "border-[#2b3044] bg-[#141826]";
 
     return (
         <Animated.View entering={FadeInDown.duration(200)} className="mb-2">
             <TouchableOpacity
-                onPress={() => hasContent && setExpanded(!expanded)}
+                onPress={() => hasContent && setExpanded(prev => !prev)}
                 activeOpacity={hasContent ? 0.7 : 1}
-                className={`flex-row items-center gap-2 rounded-lg px-3 py-2 ${
-                    isError
-                        ? "bg-tokyo-red/20 border border-tokyo-red/30"
-                        : isRunning
-                          ? "bg-tokyo-blue/20 border border-tokyo-blue/30"
-                          : "bg-tokyo-bg-highlight/70"
-                }`}
+                className={`flex-row items-center gap-2 rounded-xl border px-3 py-2 ${containerClass}`}
             >
-                {isRunning ? (
+                {isRunning || isPending ? (
                     <Animated.View entering={FadeIn}>
-                        <Loader2 size={14} color="#7aa2f7" />
+                        <Loader2 size={14} color="#b7c6ff" />
                     </Animated.View>
                 ) : isSuccess ? (
-                    <CheckCircle size={14} color="#9ece6a" />
+                    <CheckCircle size={14} color="#8ce2bc" />
                 ) : isError ? (
-                    <XCircle size={14} color="#f7768e" />
+                    <XCircle size={14} color="#ff9aad" />
                 ) : (
-                    <Icon size={14} color="#7aa2f7" />
+                    <Icon size={14} color="#b7c6ff" />
                 )}
 
-                <Text className="text-tokyo-fg-dark text-sm flex-1">{label}</Text>
+                <Text className="flex-1 text-sm text-[#dde5ff]">{label}</Text>
 
                 {hasContent ? (
                     expanded ? (
-                        <ChevronUp size={14} color="#565f89" />
+                        <ChevronUp size={14} color="#8891b1" />
                     ) : (
-                        <ChevronDown size={14} color="#565f89" />
+                        <ChevronDown size={14} color="#8891b1" />
                     )
                 ) : null}
             </TouchableOpacity>
@@ -128,15 +130,12 @@ export function ToolCallBadge({ toolCall }: { toolCall: ToolCall }) {
             {expanded && hasContent ? (
                 <Animated.View
                     entering={FadeInDown.duration(150)}
-                    className="mt-1 bg-tokyo-bg rounded-lg border border-tokyo-bg-highlight overflow-hidden"
+                    className="mt-1 overflow-hidden rounded-xl border border-[#2a3044] bg-[#0d111d]"
                 >
-                    {/* Input Section */}
-                    {Object.keys(toolCall.arguments || {}).length > 0 && (
-                        <View className="border-b border-tokyo-bg-highlight">
-                            <View className="px-3 py-1.5 bg-tokyo-bg-highlight/50">
-                                <Text className="text-tokyo-purple text-xs font-semibold">
-                                    Input
-                                </Text>
+                    {hasArgs && (
+                        <View className="border-b border-[#252b3f]">
+                            <View className="bg-[#1a2033] px-3 py-1.5">
+                                <Text className="text-xs font-semibold text-[#c2ccff]">Input</Text>
                             </View>
                             <ScrollView
                                 horizontal
@@ -144,7 +143,7 @@ export function ToolCallBadge({ toolCall }: { toolCall: ToolCall }) {
                                 className="px-3 py-2"
                             >
                                 <Text
-                                    className="text-tokyo-fg-dark text-xs font-mono"
+                                    className="text-xs font-mono text-[#cfdaff]"
                                     style={{ maxWidth: 500 }}
                                 >
                                     {formatValue(toolCall.arguments, 500)}
@@ -153,20 +152,17 @@ export function ToolCallBadge({ toolCall }: { toolCall: ToolCall }) {
                         </View>
                     )}
 
-                    {/* Output Section */}
-                    {toolCall.result !== undefined && (
+                    {hasResult && (
                         <View>
-                            <View className="px-3 py-1.5 bg-tokyo-bg-highlight/50">
-                                <Text className="text-tokyo-green text-xs font-semibold">
-                                    Output
-                                </Text>
+                            <View className="bg-[#1a2033] px-3 py-1.5">
+                                <Text className="text-xs font-semibold text-[#8ce2bc]">Output</Text>
                             </View>
                             <ScrollView
                                 style={{ maxHeight: 200 }}
                                 showsVerticalScrollIndicator
                                 className="px-3 py-2"
                             >
-                                <Text className="text-tokyo-fg-dark text-xs font-mono" selectable>
+                                <Text className="text-xs font-mono text-[#cfdaff]" selectable>
                                     {formatValue(toolCall.result, 1000)}
                                 </Text>
                             </ScrollView>

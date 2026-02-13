@@ -75,7 +75,10 @@ describe("youtube tools", () => {
         mockSearchYoutube.mockResolvedValueOnce([]);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "play_video")({
+        const result = await getExecutor(
+            tools,
+            "play_video"
+        )({
             query: "nothing",
             autoPlay: true,
         });
@@ -90,7 +93,10 @@ describe("youtube tools", () => {
         mockOpenURL.mockResolvedValueOnce(undefined);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "play_video")({
+        const result = await getExecutor(
+            tools,
+            "play_video"
+        )({
             query: "sample",
             autoPlay: true,
         });
@@ -113,7 +119,10 @@ describe("youtube tools", () => {
         mockOpenURL.mockResolvedValueOnce(undefined);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "play_video")({
+        const result = await getExecutor(
+            tools,
+            "play_video"
+        )({
             query: "sample",
             autoPlay: true,
         });
@@ -132,7 +141,10 @@ describe("youtube tools", () => {
         mockOpenURL.mockResolvedValueOnce(undefined); // fallback open web
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "play_video")({
+        const result = await getExecutor(
+            tools,
+            "play_video"
+        )({
             query: "sample",
             autoPlay: true,
         });
@@ -152,7 +164,10 @@ describe("youtube tools", () => {
         ]);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "play_video")({
+        const result = await getExecutor(
+            tools,
+            "play_video"
+        )({
             query: "sample",
             autoPlay: false,
         });
@@ -171,7 +186,10 @@ describe("youtube tools", () => {
         mockSearchYoutube.mockRejectedValueOnce(new Error("youtube down"));
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "play_video")({
+        const result = await getExecutor(
+            tools,
+            "play_video"
+        )({
             query: "sample",
             autoPlay: true,
         });
@@ -186,7 +204,10 @@ describe("youtube tools", () => {
         mockSearchYoutube.mockResolvedValueOnce([sampleVideo]);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "search_videos")({
+        const result = await getExecutor(
+            tools,
+            "search_videos"
+        )({
             query: "sample",
             maxResults: 3,
         });
@@ -202,7 +223,10 @@ describe("youtube tools", () => {
         mockSearchYoutube.mockRejectedValueOnce(new Error("search failed"));
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "search_videos")({
+        const result = await getExecutor(
+            tools,
+            "search_videos"
+        )({
             query: "sample",
             maxResults: 3,
         });

@@ -21,11 +21,12 @@ jest.mock("@/lib/logger", () => {
 
 import { useSettingsStore } from "@/stores/settingsStore";
 
-const { getItemAsync: mockGetItemAsync, setItemAsync: mockSetItemAsync } =
-    jest.requireMock("expo-secure-store") as {
-        getItemAsync: jest.Mock;
-        setItemAsync: jest.Mock;
-    };
+const { getItemAsync: mockGetItemAsync, setItemAsync: mockSetItemAsync } = jest.requireMock(
+    "expo-secure-store"
+) as {
+    getItemAsync: jest.Mock;
+    setItemAsync: jest.Mock;
+};
 
 const { __mockSettingsLogger: mockSettingsLogger } = jest.requireMock("@/lib/logger") as {
     __mockSettingsLogger: {
@@ -116,7 +117,10 @@ describe("useSettingsStore", () => {
         await expect(useSettingsStore.getState().setGeminiApiKey("new-key")).rejects.toBe(error);
 
         expect(useSettingsStore.getState().geminiApiKey).toBe("old-key");
-        expect(mockSettingsLogger.error).toHaveBeenCalledWith("Failed to save Gemini API key", error);
+        expect(mockSettingsLogger.error).toHaveBeenCalledWith(
+            "Failed to save Gemini API key",
+            error
+        );
     });
 
     test("uses same storage key for load and save", async () => {

@@ -69,7 +69,10 @@ describe("notifications tools", () => {
         mockRequestPermissionsAsync.mockResolvedValueOnce({ status: "denied" });
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "schedule_reminder")({
+        const result = await getExecutor(
+            tools,
+            "schedule_reminder"
+        )({
             title: "Take medicine",
             body: "After lunch",
             delayMinutes: 10,
@@ -87,7 +90,10 @@ describe("notifications tools", () => {
         mockScheduleNotificationAsync.mockResolvedValueOnce("notif-123");
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "schedule_reminder")({
+        const result = await getExecutor(
+            tools,
+            "schedule_reminder"
+        )({
             title: "Stand up",
             body: "Stretch for a minute",
             delayMinutes: 15,
@@ -117,7 +123,10 @@ describe("notifications tools", () => {
         mockScheduleNotificationAsync.mockRejectedValueOnce(new Error("schedule failed"));
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "schedule_reminder")({
+        const result = await getExecutor(
+            tools,
+            "schedule_reminder"
+        )({
             title: "Pay bill",
             body: "Electricity",
             delayMinutes: 5,
@@ -133,7 +142,10 @@ describe("notifications tools", () => {
         mockCancelScheduledNotificationAsync.mockResolvedValueOnce(undefined);
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "cancel_reminder")({
+        const result = await getExecutor(
+            tools,
+            "cancel_reminder"
+        )({
             notificationId: "notif-123",
         });
 
@@ -148,7 +160,10 @@ describe("notifications tools", () => {
         mockCancelScheduledNotificationAsync.mockRejectedValueOnce(new Error("cancel failed"));
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "cancel_reminder")({
+        const result = await getExecutor(
+            tools,
+            "cancel_reminder"
+        )({
             notificationId: "notif-123",
         });
 

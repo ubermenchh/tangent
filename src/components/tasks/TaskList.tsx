@@ -27,12 +27,14 @@ export function TaskList() {
 
     if (tasks.length === 0) {
         return (
-            <View className="flex-1 items-center justify-center p-8">
-                <ListTodo size={48} color="#565f89" />
-                <Text className="text-tokyo-comment text-lg mt-4 text-center">
+            <View className="mx-4 mt-2 flex-1 items-center justify-center rounded-[28px] border border-[#ffffff20] bg-[#0e111bcc] p-8">
+                <View className="h-16 w-16 items-center justify-center rounded-full border border-[#2c3348] bg-[#151a2a]">
+                    <ListTodo size={28} color="#a7afcd" />
+                </View>
+                <Text className="mt-4 text-center text-lg font-semibold text-[#ecf1ff]">
                     No background tasks yet
                 </Text>
-                <Text className="text-tokyo-comment/70 text-sm mt-2 text-center">
+                <Text className="mt-2 text-center text-sm leading-6 text-[#9aa3c2]">
                     Long-press the send button to run a task in the background
                 </Text>
             </View>
@@ -44,10 +46,10 @@ export function TaskList() {
             data={sortedTasks}
             renderItem={renderItem}
             keyExtractor={keyExtractor}
-            contentContainerStyle={{ padding: 16 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
             showsVerticalScrollIndicator={false}
             // Performance optimizations
-            removeClippedSubviews
+            removeClippedSubviews={false}
             maxToRenderPerBatch={10}
             windowSize={5}
         />

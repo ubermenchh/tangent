@@ -58,7 +58,9 @@ describe("youtube integration", () => {
         const calledUrl = mockFetch.mock.calls[0]?.[0] as string;
         const parsed = new URL(calledUrl);
 
-        expect(`${parsed.origin}${parsed.pathname}`).toBe("https://www.googleapis.com/youtube/v3/search");
+        expect(`${parsed.origin}${parsed.pathname}`).toBe(
+            "https://www.googleapis.com/youtube/v3/search"
+        );
         expect(parsed.searchParams.get("part")).toBe("snippet");
         expect(parsed.searchParams.get("q")).toBe("lofi beats");
         expect(parsed.searchParams.get("type")).toBe("video");

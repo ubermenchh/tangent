@@ -1,10 +1,7 @@
 import { indexStore } from "@/index/store";
 import type { IndexedFile } from "@/index/types";
 
-function makeFile(
-    path: string,
-    overrides: Partial<IndexedFile> = {}
-): IndexedFile {
+function makeFile(path: string, overrides: Partial<IndexedFile> = {}): IndexedFile {
     const name = path.split("/").pop() || "file.txt";
     const ext = name.includes(".") ? name.split(".").pop() || "txt" : "txt";
 

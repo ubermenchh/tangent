@@ -83,7 +83,7 @@ describe("skillRegistry", () => {
 
         expect(a).toBeDefined();
         expect(b).toBeDefined();
-        expect((b?.confidence ?? 0)).toBeGreaterThan(a?.confidence ?? 0);
+        expect(b?.confidence ?? 0).toBeGreaterThan(a?.confidence ?? 0);
         expect(matches[0].skill.id).toBe(idB);
     });
 
@@ -227,7 +227,12 @@ describe("skillRegistry", () => {
         skillRegistry.register(makeSkill(id1, { onActivate: onActivate1 }), [kw1]);
         skillRegistry.register(makeSkill(id2, { onActivate: onActivate2 }), [kw2]);
         skillRegistry.register(makeSkill(id3, { onActivate: onActivate3 }), [kw3]);
-        skillRegistry.register(makeSkill(id4, { onActivate: onActivate4 }), [kw4, uid("extra"), uid("extra2"), uid("extra3")]);
+        skillRegistry.register(makeSkill(id4, { onActivate: onActivate4 }), [
+            kw4,
+            uid("extra"),
+            uid("extra2"),
+            uid("extra3"),
+        ]);
 
         const fakeConfig: ScopedAgentConfig = {
             systemPrompt: "scoped",

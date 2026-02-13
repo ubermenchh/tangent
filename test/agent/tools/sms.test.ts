@@ -41,10 +41,9 @@ jest.mock("@/lib/logger", () => ({
 import "@/agent/tools/sms";
 import { toolRegistry } from "@/agent/tools/registry";
 
-const {
-    __mockRequest: mockPermissionRequest,
-    __mockPlatform: mockPlatform,
-} = jest.requireMock("react-native") as {
+const { __mockRequest: mockPermissionRequest, __mockPlatform: mockPlatform } = jest.requireMock(
+    "react-native"
+) as {
     __mockRequest: jest.Mock;
     __mockPlatform: { OS: string };
 };
@@ -79,7 +78,10 @@ describe("sms tools", () => {
         mockPlatform.OS = "ios";
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "send_sms")({
+        const result = await getExecutor(
+            tools,
+            "send_sms"
+        )({
             phoneNumber: "+1234567890",
             message: "hello",
         });
@@ -96,7 +98,10 @@ describe("sms tools", () => {
         mockPermissionRequest.mockResolvedValueOnce("denied");
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "send_sms")({
+        const result = await getExecutor(
+            tools,
+            "send_sms"
+        )({
             phoneNumber: "+1234567890",
             message: "hello",
         });
@@ -121,7 +126,10 @@ describe("sms tools", () => {
         mockPermissionRequest.mockRejectedValueOnce(new Error("permission crash"));
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "send_sms")({
+        const result = await getExecutor(
+            tools,
+            "send_sms"
+        )({
             phoneNumber: "+1234567890",
             message: "hello",
         });
@@ -138,7 +146,10 @@ describe("sms tools", () => {
         mockSendDirectSms.mockResolvedValueOnce("sent-ok");
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "send_sms")({
+        const result = await getExecutor(
+            tools,
+            "send_sms"
+        )({
             phoneNumber: "+1234567890",
             message: "hello there",
         });
@@ -157,7 +168,10 @@ describe("sms tools", () => {
         mockSendDirectSms.mockRejectedValueOnce(new Error("sms-failed"));
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = await getExecutor(tools, "send_sms")({
+        const result = await getExecutor(
+            tools,
+            "send_sms"
+        )({
             phoneNumber: "+1234567890",
             message: "hello",
         });

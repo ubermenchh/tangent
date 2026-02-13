@@ -25,7 +25,10 @@ describe("agent prompt composition", () => {
     });
 
     test("appends active skills section with trimmed fragments in order", () => {
-        const skills = [makeSkill("a", "  First fragment  "), makeSkill("b", "\nSecond fragment\n")];
+        const skills = [
+            makeSkill("a", "  First fragment  "),
+            makeSkill("b", "\nSecond fragment\n"),
+        ];
 
         const result = composeSystemPrompt(skills);
 

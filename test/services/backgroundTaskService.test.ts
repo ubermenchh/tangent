@@ -359,7 +359,9 @@ describe("backgroundTaskService", () => {
 
         serviceInternals.isRunning = false;
 
-        const startSpy = jest.spyOn(ctx.backgroundTaskService, "startTask").mockResolvedValue(undefined);
+        const startSpy = jest
+            .spyOn(ctx.backgroundTaskService, "startTask")
+            .mockResolvedValue(undefined);
 
         await serviceInternals.processQueue();
 
@@ -421,12 +423,12 @@ describe("backgroundTaskService", () => {
     test("startTask returns early when another task is already running", async () => {
         const ctx = setup();
         ctx.mockGetTask.mockReturnValue(makeTask("task-1", "hello"));
-    
+
         const serviceInternals = ctx.backgroundTaskService as unknown as { isRunning: boolean };
         serviceInternals.isRunning = true;
-    
+
         await ctx.backgroundTaskService.startTask("task-1", "hello");
-    
+
         expect(ctx.log.info).toHaveBeenCalledWith("Task task-1 queued - another task is running");
         expect(ctx.backgroundActions.start).not.toHaveBeenCalled();
         expect(ctx.AgentOrchestrator).not.toHaveBeenCalled();
@@ -436,15 +438,15 @@ describe("backgroundTaskService", () => {
         const ctx = setup();
         ctx.mockGetTask.mockReturnValue(makeTask("task-1", "hello"));
         ctx.backgroundActions.start.mockRejectedValueOnce("start-failed-non-error");
-    
+
         await ctx.backgroundTaskService.startTask("task-1", "hello");
-    
+
         expect(ctx.mockUpdateTask).toHaveBeenCalledWith("task-1", {
             status: "failed",
             error: "Failed to start background service",
         });
     });
-    
+
     test("executeTask uses fallback result text when orchestrator returns empty content", async () => {
         const ctx = setup();
         ctx.mockGetTask.mockReturnValue(makeTask("task-1", "hello"));
@@ -456,9 +458,9 @@ describe("backgroundTaskService", () => {
         });
         ctx.backgroundActions.isRunning.mockReturnValue(true);
         runTaskInStart(ctx.backgroundActions);
-    
+
         await ctx.backgroundTaskService.startTask("task-1", "hello");
-    
+
         expect(ctx.mockUpdateTask).toHaveBeenCalledWith(
             "task-1",
             expect.objectContaining({
@@ -468,21 +470,21 @@ describe("backgroundTaskService", () => {
         );
         expect(ctx.mockAddMessage).toHaveBeenCalledWith("assistant", "Task completed successfully");
     });
-    
+
     test("executeTask reports Error message for failed execution and notification", async () => {
         const ctx = setup();
         ctx.mockGetTask.mockReturnValue(makeTask("task-1", "hello"));
         ctx.mockExecute.mockRejectedValueOnce(new Error("runner exploded"));
         runTaskInStart(ctx.backgroundActions);
-    
+
         await ctx.backgroundTaskService.startTask("task-1", "hello");
-    
+
         expect(ctx.mockUpdateTask).toHaveBeenCalledWith("task-1", {
             status: "failed",
             error: "runner exploded",
             currentStep: undefined,
         });
-    
+
         expect(ctx.backgroundActions.updateNotification).toHaveBeenCalledWith({
             taskTitle: "Task Failed",
             taskDesc: "runner exploded",

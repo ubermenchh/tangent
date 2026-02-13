@@ -127,7 +127,10 @@ describe("contacts tools", () => {
         mockGetContactsAsync.mockResolvedValueOnce({ data });
 
         const tools = (await toolRegistry.getTools()) as Record<string, { execute?: unknown }>;
-        const result = (await getExecutor(tools, "search_contacts")({
+        const result = (await getExecutor(
+            tools,
+            "search_contacts"
+        )({
             query: "a",
         })) as {
             found: number;

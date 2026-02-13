@@ -5,6 +5,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        foreground: "#c0caf5",
         // Tokyo Night Storm palette
         tokyo: {
           bg: '#1a1b26',

@@ -6,8 +6,9 @@ import {
     Keyboard,
     AppState,
     AppStateStatus,
+    Text,
 } from "react-native";
-import { Send, Square } from "lucide-react-native";
+import { ArrowUp, Mic, Sparkles, Square } from "lucide-react-native";
 import { useChatStore } from "@/stores/chatStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { Agent } from "@/agent";
@@ -282,89 +283,147 @@ export function ChatInput({ centered = false }: ChatInputProps) {
 
     if (centered) {
         return (
-            <Animated.View entering={FadeIn.duration(300)} className="w-full px-4">
-                {/* Suggestion Chips */}
-                <View className="flex-row flex-wrap justify-center gap-2 mb-4">
+            <Animated.View entering={FadeIn.duration(300)} className="w-full px-2 pb-2">
+                <View className="mb-4 flex-row flex-wrap justify-center gap-2">
                     {["Send a message", "Search my files", "Battery status"].map(suggestion => (
                         <TouchableOpacity
                             key={suggestion}
-                            className="px-4 py-2 rounded-full bg-tokyo-bg-highlight border border-tokyo-terminal"
+                            className="rounded-full border border-[#ffffff24] bg-[#0e111bcc] px-4 py-2"
                             onPress={() => setText(suggestion)}
                         >
-                            <Animated.Text className="text-tokyo-fg-dark text-sm">
+                            <Animated.Text className="text-sm text-[#d7dcf0]">
                                 {suggestion}
                             </Animated.Text>
                         </TouchableOpacity>
                     ))}
                 </View>
 
-                {/* Centered Input */}
-                <View className="flex-row gap-3 items-end bg-tokyo-storm rounded-2xl border border-tokyo-bg-highlight p-2">
-                    <TextInput
-                        ref={inputRef}
-                        className="flex-1 text-tokyo-fg px-4 py-3 text-base"
-                        style={{ minHeight: 48, maxHeight: 120 }}
-                        value={text}
-                        onChangeText={setText}
-                        placeholder={
-                            geminiApiKey ? "Ask Tangent anything..." : "Set API key in settings..."
-                        }
-                        placeholderTextColor="#565f89"
-                        onSubmitEditing={handleSend}
-                        returnKeyType="send"
-                        multiline
-                        onContentSizeChange={handleContentSizeChange}
-                    />
-                    <TouchableOpacity
-                        className={cn(
-                            "w-12 h-12 rounded-xl items-center justify-center mb-1",
-                            hasText ? "bg-tokyo-blue" : "bg-tokyo-bg-highlight"
+                <View className="overflow-hidden rounded-[28px] border border-[#ffffff22] bg-[#0a0d16]/90 p-3">
+                    <View className="rounded-[22px] border border-[#2a2f42] bg-[#111522] pl-2 pr-3">
+                        <TextInput
+                            ref={inputRef}
+                            className="px-3 py-3 text-base text-[#eef2ff]"
+                            style={{ minHeight: 48, maxHeight: 120 }}
+                            value={text}
+                            onChangeText={setText}
+                            placeholder={
+                                geminiApiKey
+                                    ? "Ask Tangent anything..."
+                                    : "Set API key in settings..."
+                            }
+                            placeholderTextColor="#565f89"
+                            onSubmitEditing={handleSend}
+                            returnKeyType="send"
+                            multiline
+                            onContentSizeChange={handleContentSizeChange}
+                        />
+                    </View>
+
+                    <View className="mt-3 flex-row items-center justify-between px-1">
+                        <View className="flex-row items-center gap-2">
+                            <TouchableOpacity
+                                className="h-11 w-11 items-center justify-center rounded-full border border-[#ffffff24] bg-[#1b2238]"
+                                onPress={() => setText(prev => (prev ? prev : "Reflect on my day"))}
+                                accessibilityLabel="Spark suggestion"
+                            >
+                                <Sparkles size={18} color="#f2f5ff" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                className="h-11 w-11 items-center justify-center rounded-full border border-[#ffffff24] bg-[#0f1322]"
+                                accessibilityLabel="Voice input"
+                            >
+                                <Mic size={17} color="#dbe2ff" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {hasActiveStreams ? (
+                            <TouchableOpacity
+                                className="h-12 w-12 items-center justify-center rounded-full border border-[#7a3a4a] bg-[#4a1e29]"
+                                onPress={handleCancel}
+                                accessibilityLabel="Stop generation"
+                            >
+                                <Square size={18} color="#f7768e" fill="#f7768e" />
+                            </TouchableOpacity>
+                        ) : (
+                            <TouchableOpacity
+                                className={cn(
+                                    "h-12 w-12 items-center justify-center rounded-full border",
+                                    hasText
+                                        ? "border-[#aab5ff] bg-[#f2f4ff]"
+                                        : "border-[#2d3348] bg-[#151a2a]"
+                                )}
+                                onPress={handleSend}
+                                disabled={!hasText}
+                                accessibilityLabel="Send message"
+                            >
+                                <ArrowUp size={20} color={hasText ? "#101322" : "#6c738f"} />
+                            </TouchableOpacity>
                         )}
-                        onPress={handleSend}
-                        disabled={!hasText}
-                        accessibilityLabel="Send message"
-                    >
-                        <Send size={20} color={hasText ? "#1a1b26" : "#565f89"} />
-                    </TouchableOpacity>
+                    </View>
                 </View>
             </Animated.View>
         );
     }
 
     return (
-        <View className="flex-row px-4 py-3 gap-3 border-t border-tokyo-bg-highlight bg-tokyo-storm items-end">
-            <TextInput
-                ref={inputRef}
-                className="flex-1 bg-tokyo-bg text-tokyo-fg px-4 py-3 rounded-xl text-base border border-tokyo-bg-highlight"
-                style={{ minHeight: 48, maxHeight: 120, height: inputHeight }}
-                value={text}
-                onChangeText={setText}
-                placeholder={geminiApiKey ? "Ask Tangent..." : "Set API key in settings..."}
-                placeholderTextColor="#565f89"
-                onSubmitEditing={handleSend}
-                returnKeyType="send"
-                multiline
-                onContentSizeChange={handleContentSizeChange}
-            />
-            {hasActiveStreams ? (
-                <TouchableOpacity
-                    className="w-12 h-12 rounded-full items-center justify-center bg-red-600"
-                    onPress={handleCancel}
-                >
-                    <Square size={16} color="white" fill="white" />
-                </TouchableOpacity>
-            ) : (
-                <TouchableOpacity
-                    className={cn(
-                        "w-12 h-12 rounded-full items-center justify-center",
-                        hasText ? "bg-blue-600" : "bg-zinc-800"
-                    )}
-                    onPress={handleSend}
-                    disabled={!hasText}
-                >
-                    <Send size={20} color={hasText ? "white" : "#71717a"} />
-                </TouchableOpacity>
-            )}
+        <View className="border-t border-[#1c1f2c] bg-[#070910] px-4 pb-4 pt-3">
+            <View className="flex-row items-end gap-3">
+                <View className="flex-1 rounded-[28px] border border-[#ffffff1f] bg-[#0e111ccc] px-3 py-2">
+                    <View className="flex-row items-end">
+                        <TextInput
+                            ref={inputRef}
+                            className="flex-1 px-2 py-2 text-base text-[#eef2ff]"
+                            style={{ minHeight: 48, maxHeight: 120, height: inputHeight }}
+                            value={text}
+                            onChangeText={setText}
+                            placeholder={
+                                geminiApiKey ? "Ask Tangent..." : "Set API key in settings..."
+                            }
+                            placeholderTextColor="#7d839d"
+                            onSubmitEditing={handleSend}
+                            returnKeyType="send"
+                            multiline
+                            onContentSizeChange={handleContentSizeChange}
+                        />
+                        <TouchableOpacity
+                            className="mb-1 h-9 w-9 items-center justify-center rounded-full border border-[#ffffff24] bg-[#151a2a]"
+                            accessibilityLabel="Voice input"
+                        >
+                            <Mic size={16} color="#d4dcff" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {hasActiveStreams ? (
+                    <TouchableOpacity
+                        className="h-12 w-12 items-center justify-center rounded-full border border-[#7a3a4a] bg-[#4a1e29]"
+                        onPress={handleCancel}
+                    >
+                        <Square size={16} color="#f7768e" fill="#f7768e" />
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity
+                        className={cn(
+                            "h-12 w-12 items-center justify-center rounded-full border",
+                            hasText
+                                ? "border-[#acb6ff] bg-[#f2f4ff]"
+                                : "border-[#2d3348] bg-[#151a2a]"
+                        )}
+                        onPress={handleSend}
+                        disabled={!hasText}
+                    >
+                        <ArrowUp size={20} color={hasText ? "#111426" : "#6c738f"} />
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            <View className="mt-2 flex-row justify-center">
+                <Text className="text-xs text-[#7a819d]">
+                    {hasActiveStreams
+                        ? "Generating response. Tap square to stop."
+                        : "Tap mic for voice or arrow to send."}
+                </Text>
+            </View>
         </View>
     );
 }

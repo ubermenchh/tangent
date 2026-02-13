@@ -87,7 +87,9 @@ describe("ToolCallBadge", () => {
 
     test("does not expand when there is no input/output content", () => {
         const { getByText, queryByText } = render(
-            <ToolCallBadge toolCall={makeToolCall({ status: "success", arguments: {}, result: undefined })} />
+            <ToolCallBadge
+                toolCall={makeToolCall({ status: "success", arguments: {}, result: undefined })}
+            />
         );
 
         fireEvent.press(getByText("Web Search"));

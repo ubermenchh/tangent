@@ -68,12 +68,14 @@ const mockAddStream = jest.fn();
 const mockRemoveStream = jest.fn();
 const mockIsStreaming = jest.fn(() => false);
 
-const mockAddMessage = jest.fn((role: string, content: string, options: Record<string, unknown> = {}) => {
-    nextMessageId += 1;
-    const id = `m_${nextMessageId}`;
-    messages.push({ id, role, content, timestamp: Date.now(), ...options });
-    return id;
-});
+const mockAddMessage = jest.fn(
+    (role: string, content: string, options: Record<string, unknown> = {}) => {
+        nextMessageId += 1;
+        const id = `m_${nextMessageId}`;
+        messages.push({ id, role, content, timestamp: Date.now(), ...options });
+        return id;
+    }
+);
 
 jest.mock("@/stores/chatStore", () => {
     const __mockUseChatStore = Object.assign(
@@ -274,7 +276,7 @@ describe("ChatInput", () => {
 
     test("uses skill-scoped foreground agent when matched skills do not require background", async () => {
         mockCurrentApiKey = "key-scoped";
-    
+
         const matchedSkill = {
             id: "productivity",
             name: "Productivity",
@@ -283,29 +285,29 @@ describe("ChatInput", () => {
             needsBackground: false,
             maxSteps: 12,
         };
-    
+
         mockMatchSkills.mockReturnValue([{ skill: matchedSkill, confidence: 0.9 }]);
-    
+
         mockComposeConfig.mockResolvedValueOnce({
             systemPrompt: "scoped-system",
             toolNames: ["get_device_info"],
             maxSteps: 12,
         });
-    
+
         mockResolveTools.mockResolvedValueOnce({
             get_device_info: {},
         });
-    
+
         mockProcessMessageStream.mockImplementation(async function* () {
             yield { type: "done" };
         });
-    
+
         const { getByPlaceholderText } = render(<ChatInput />);
         const input = getByPlaceholderText("Ask Tangent...");
-    
+
         fireEvent.changeText(input, "Check phone info");
         fireEvent(input, "submitEditing");
-    
+
         await waitFor(() => {
             expect(mockComposeConfig).toHaveBeenCalledWith([matchedSkill]);
             expect(mockResolveTools).toHaveBeenCalledWith(["get_device_info"]);
@@ -317,10 +319,10 @@ describe("ChatInput", () => {
             });
         });
     });
-    
+
     test("marks task failed when background task startup fails", async () => {
         mockCurrentApiKey = "key-bg-fail";
-    
+
         mockMatchSkills.mockReturnValue([
             {
                 skill: {
@@ -334,49 +336,49 @@ describe("ChatInput", () => {
                 confidence: 0.99,
             },
         ]);
-    
+
         mockStartTask.mockRejectedValueOnce(new Error("background launch failed"));
-    
+
         const { getByPlaceholderText } = render(<ChatInput />);
         const input = getByPlaceholderText("Ask Tangent...");
-    
+
         fireEvent.changeText(input, "Open whatsapp");
         fireEvent(input, "submitEditing");
-    
+
         await waitFor(() => {
             expect(mockFailTask).toHaveBeenCalledWith("task-1", "background launch failed");
         });
     });
-    
+
     test("centered mode suggestion chip pre-fills input", () => {
         mockCurrentApiKey = "key-centered";
-    
+
         const { getByText, getByDisplayValue } = render(<ChatInput centered />);
-    
+
         fireEvent.press(getByText("Battery status"));
-    
+
         expect(getByDisplayValue("Battery status")).toBeTruthy();
     });
-    
+
     test("clamps input height between 48 and 120", () => {
         mockCurrentApiKey = "key-height";
-    
+
         const { getByPlaceholderText } = render(<ChatInput />);
         const input = getByPlaceholderText("Ask Tangent...");
-    
+
         fireEvent(input, "contentSizeChange", {
             nativeEvent: { contentSize: { width: 100, height: 300 } },
         });
-    
+
         const styleAfterLarge = Array.isArray(input.props.style)
             ? Object.assign({}, ...input.props.style)
             : input.props.style;
         expect(styleAfterLarge.height).toBe(120);
-    
+
         fireEvent(input, "contentSizeChange", {
             nativeEvent: { contentSize: { width: 100, height: 10 } },
         });
-    
+
         const styleAfterSmall = Array.isArray(input.props.style)
             ? Object.assign({}, ...input.props.style)
             : input.props.style;
@@ -385,7 +387,7 @@ describe("ChatInput", () => {
 
     test("escalates active foreground stream when app backgrounds", async () => {
         mockCurrentApiKey = "key-bg";
-    
+
         const appState = require("react-native").AppState as {
             addEventListener: (type: string, cb: (state: string) => void) => { remove: () => void };
         };
@@ -395,57 +397,58 @@ describe("ChatInput", () => {
             cb: (state: string) => void
         ) => { remove: () => void };
 
-        const addEventListenerMock = appState.addEventListener as jest.MockedFunction<AddEventListener>;
+        const addEventListenerMock =
+            appState.addEventListener as jest.MockedFunction<AddEventListener>;
         let appStateHandler: ((state: string) => void) | undefined;
 
         addEventListenerMock.mockImplementationOnce((_type, cb) => {
             appStateHandler = cb;
             return { remove: jest.fn() };
         });
-    
+
         let releaseGate: (() => void) | undefined;
         const gate = new Promise<void>(resolve => {
             releaseGate = resolve;
         });
-    
+
         mockProcessMessageStream.mockImplementation(async function* () {
             yield { type: "thinking" };
             await gate;
             yield { type: "done" };
         });
-    
+
         const { getByPlaceholderText } = render(<ChatInput />);
         const input = getByPlaceholderText("Ask Tangent...");
-    
+
         fireEvent.changeText(input, "Long running task");
         fireEvent(input, "submitEditing");
-    
+
         const assistantId = mockAddMessage.mock.results[1]?.value as string;
-    
+
         await waitFor(() => {
             expect(mockAddStream).toHaveBeenCalledWith(assistantId);
         });
-    
+
         expect(appStateHandler).toBeDefined();
         appStateHandler?.("background");
-    
+
         await waitFor(() => {
             expect(mockAgentCancel).toHaveBeenCalledTimes(1);
             expect(mockAddTask).toHaveBeenCalledWith("Long running task");
             expect(mockStartTask).toHaveBeenCalledWith("task-1", "Long running task");
         });
-    
+
         expect(mockUpdateMessage).toHaveBeenCalledWith(assistantId, {
             status: "complete",
             content: "[Moved to background]",
         });
-    
+
         releaseGate?.();
     });
-    
+
     test("handles reasoning/tool-call/tool-call-end/cancelled stream chunks", async () => {
         mockCurrentApiKey = "key-stream";
-    
+
         mockProcessMessageStream.mockImplementation(async function* () {
             yield { type: "thinking" };
             yield { type: "reasoning", content: "reason step" };
@@ -470,26 +473,26 @@ describe("ChatInput", () => {
             };
             yield { type: "cancelled" };
         });
-    
+
         const { getByPlaceholderText } = render(<ChatInput />);
         const input = getByPlaceholderText("Ask Tangent...");
-    
+
         fireEvent.changeText(input, "Run stream");
         fireEvent(input, "submitEditing");
-    
+
         const assistantId = mockAddMessage.mock.results[1]?.value as string;
-    
+
         await waitFor(() => {
             expect(mockAppendToReasoning).toHaveBeenCalledWith(assistantId, "reason step");
         });
-    
+
         expect(mockUpdateMessage).toHaveBeenCalledWith(
             assistantId,
             expect.objectContaining({ status: "streaming" })
         );
-    
+
         expect(mockUpdateMessage).toHaveBeenCalledWith(assistantId, { toolCalls: [] });
-    
+
         await waitFor(() => {
             expect(mockUpdateMessage).toHaveBeenCalledWith(assistantId, {
                 status: "complete",
@@ -497,23 +500,23 @@ describe("ChatInput", () => {
             });
         });
     });
-    
+
     test("marks assistant message as error when stream throws", async () => {
         mockCurrentApiKey = "key-stream-error";
-    
+
         mockProcessMessageStream.mockImplementation(async function* () {
             yield { type: "thinking" };
             throw new Error("stream crash");
         });
-    
+
         const { getByPlaceholderText } = render(<ChatInput />);
         const input = getByPlaceholderText("Ask Tangent...");
-    
+
         fireEvent.changeText(input, "Cause stream error");
         fireEvent(input, "submitEditing");
-    
+
         const assistantId = mockAddMessage.mock.results[1]?.value as string;
-    
+
         await waitFor(() => {
             expect(mockUpdateMessage).toHaveBeenCalledWith(assistantId, {
                 content: "Error: stream crash",
